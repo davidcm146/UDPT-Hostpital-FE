@@ -1,4 +1,3 @@
-
 import StatusSection from "@/components/about/StatusSection"
 import ValuesSection from "@/components/about/ValueSection"
 import LeadershipSection from "@/components/about/LeadershipSection"
