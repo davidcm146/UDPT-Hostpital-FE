@@ -1,16 +1,18 @@
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faHospital } from "@fortawesome/free-solid-svg-icons"
+import { Card, CardContent } from "@/components/ui/card"
+import { Search } from "lucide-react"
 
-const DoctorNotFound = () => {
+const NoDoctorsFound = () => {
   return (
-    <div className="text-center py-12">
-      <div className="text-gray-400 mb-4">
-        <FontAwesomeIcon icon={faHospital} className="h-12 w-12" />
-      </div>
-      <h3 className="text-xl font-medium text-gray-900 mb-2">No doctors found</h3>
-      <p className="text-gray-600">Try adjusting your search criteria or filters to find more doctors.</p>
-    </div>
+    <Card className="w-full">
+      <CardContent className="flex flex-col items-center justify-center py-12">
+        <Search className="h-12 w-12 text-gray-400 mb-4" />
+        <h3 className="text-lg font-semibold text-gray-900 mb-2">No doctors found</h3>
+        <p className="text-gray-600 text-center max-w-md">
+          We couldn't find any doctors matching your search criteria. Try adjusting your filters or search terms.
+        </p>
+      </CardContent>
+    </Card>
   )
 }
 
-export default DoctorNotFound
+export default NoDoctorsFound

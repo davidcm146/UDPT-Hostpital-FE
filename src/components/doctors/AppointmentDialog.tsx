@@ -4,6 +4,8 @@ import { DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
 import type { Doctor } from "@/types/doctor"
+import type { CreateAppointmentRequest } from "@/types/appointment"
+import { createAppointment } from "@/data/appointment"
 
 // Time slots - morning and afternoon sessions
 export const timeSlots = {
@@ -28,6 +30,30 @@ const AppointmentDialog = ({
   setSelectedTimeSlot,
   onConfirmAppointment,
 }: AppointmentDialogProps) => {
+  const handleConfirmAppointment = () => {
+    if (!selectedTimeSlot || !selectedDoctor || !selectedDate) return
+
+    // Mock patient ID - in real app this would come from authentication
+    const mockPatientID = "550e8400-e29b-41d4-a716-446655440999"
+
+    const appointmentRequest: CreateAppointmentRequest = {
+      patientID: mockPatientID,
+      doctorID: selectedDoctor.id,
+      appointmentDate: selectedDate,
+      appointmentTime: selectedTimeSlot.replace(/\s(AM|PM)/, "").padStart(5, "0"), // Convert "9:00 AM" to "09:00"
+    }
+
+    try {
+      const newAppointment = createAppointment(appointmentRequest)
+      alert(
+        `Appointment created successfully!\nAppointment ID: ${newAppointment.appointmentID}\nStatus: ${newAppointment.status}\nDate: ${selectedDate.toLocaleDateString()}\nTime: ${selectedTimeSlot}`,
+      )
+      onConfirmAppointment()
+    } catch (error) {
+      alert("Failed to create appointment. Please try again.")
+    }
+  }
+
   return (
     <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
       <DialogHeader>
@@ -82,7 +108,7 @@ const AppointmentDialog = ({
         <Button
           className="w-full mt-4 bg-teal-600 hover:bg-teal-700"
           disabled={!selectedTimeSlot}
-          onClick={onConfirmAppointment}
+          onClick={handleConfirmAppointment}
         >
           Confirm Appointment
         </Button>

@@ -1,3 +1,5 @@
+"use client"
+
 import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -11,8 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faSearch, faCalendarAlt, faVenusMars, faBuilding, faStethoscope } from "@fortawesome/free-solid-svg-icons"
+import { Search, CalendarIcon, Building, Stethoscope } from "lucide-react"
 import { format } from "date-fns"
 
 // Specialty options
@@ -43,8 +44,6 @@ interface DoctorSearchFiltersProps {
   setSpecialty: (specialty: string) => void
   location: string
   setLocation: (location: string) => void
-  gender: string
-  setGender: (gender: string) => void
   availableDate: Date | undefined
   setAvailableDate: (date: Date | undefined) => void
   activeFilters: string[]
@@ -60,8 +59,6 @@ const DoctorSearchFilters = ({
   setSpecialty,
   location,
   setLocation,
-  gender,
-  setGender,
   availableDate,
   setAvailableDate,
   activeFilters,
@@ -80,16 +77,12 @@ const DoctorSearchFilters = ({
       filters.push(`Location: ${locations.find((l) => l.value === location)?.label}`)
     }
 
-    if (gender !== "all") {
-      filters.push(`Gender: ${gender === "male" ? "Male" : "Female"}`)
-    }
-
     if (availableDate) {
       filters.push(`Available: ${format(availableDate, "PPP")}`)
     }
 
     setActiveFilters(filters)
-  }, [specialty, location, gender, availableDate, setActiveFilters])
+  }, [specialty, location, availableDate, setActiveFilters])
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-md mb-8">
@@ -104,7 +97,7 @@ const DoctorSearchFilters = ({
             className="w-full pl-10"
           />
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-            <FontAwesomeIcon icon={faSearch} className="text-gray-400" />
+            <Search className="h-4 w-4 text-gray-400" />
           </div>
         </div>
 
@@ -112,7 +105,7 @@ const DoctorSearchFilters = ({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="w-full md:w-auto">
-              <FontAwesomeIcon icon={faStethoscope} className="mr-2 text-gray-500" />
+              <Stethoscope className="mr-2 h-4 w-4 text-gray-500" />
               Specialty
             </Button>
           </DropdownMenuTrigger>
@@ -135,7 +128,7 @@ const DoctorSearchFilters = ({
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="outline" className="w-full md:w-auto">
-              <FontAwesomeIcon icon={faBuilding} className="mr-2 text-gray-500" />
+              <Building className="mr-2 h-4 w-4 text-gray-500" />
               Location
             </Button>
           </DropdownMenuTrigger>
@@ -154,34 +147,11 @@ const DoctorSearchFilters = ({
           </DropdownMenuContent>
         </DropdownMenu>
 
-        {/* Gender Filter Dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="w-full md:w-auto">
-              <FontAwesomeIcon icon={faVenusMars} className="mr-2 text-gray-500" />
-              Gender
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56">
-            <DropdownMenuLabel>Select Gender</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem className={gender === "all" ? "bg-muted" : ""} onClick={() => setGender("all")}>
-              Any Gender
-            </DropdownMenuItem>
-            <DropdownMenuItem className={gender === "male" ? "bg-muted" : ""} onClick={() => setGender("male")}>
-              Male
-            </DropdownMenuItem>
-            <DropdownMenuItem className={gender === "female" ? "bg-muted" : ""} onClick={() => setGender("female")}>
-              Female
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-
         {/* Date Filter Dropdown */}
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="outline" className="w-full md:w-auto">
-              <FontAwesomeIcon icon={faCalendarAlt} className="mr-2 text-gray-500" />
+              <CalendarIcon className="mr-2 h-4 w-4 text-gray-500" />
               {availableDate ? format(availableDate, "PP") : "Available Date"}
             </Button>
           </PopoverTrigger>
@@ -197,7 +167,7 @@ const DoctorSearchFilters = ({
 
         {/* Search Button */}
         <Button className="bg-teal-600 hover:bg-teal-700 w-full md:w-auto" onClick={onSearch}>
-          <FontAwesomeIcon icon={faSearch} className="mr-2" />
+          <Search className="mr-2 h-4 w-4" />
           Search
         </Button>
       </div>

@@ -1,3 +1,5 @@
+"use client"
+
 import { useState } from "react"
 import { mockDoctors } from "@/data/doctors"
 import type { Doctor } from "@/types/doctor"
@@ -10,7 +12,6 @@ const FindDoctorPage = () => {
   const [searchQuery, setSearchQuery] = useState("")
   const [specialty, setSpecialty] = useState("all")
   const [location, setLocation] = useState("all")
-  const [gender, setGender] = useState("all")
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
@@ -29,13 +30,12 @@ const FindDoctorPage = () => {
 
     const matchesSpecialty = specialty === "all" || doctor.specialty.toLowerCase() === specialty.toLowerCase()
 
-    const matchesLocation = location === "all" || doctor.location.toLowerCase().includes(location.toLowerCase())
+    const matchesLocation =
+      location === "all" || (doctor.location && doctor.location.toLowerCase().includes(location.toLowerCase()))
 
-    const matchesGender = gender === "all" || doctor.gender.toLowerCase() === gender.toLowerCase()
+    const matchesDate = !availableDate || (doctor.availability && doctor.availability.includes("Available today"))
 
-    const matchesDate = !availableDate || doctor.availability.includes("Available today")
-
-    return matchesQuery && matchesSpecialty && matchesLocation && matchesGender && matchesDate
+    return matchesQuery && matchesSpecialty && matchesLocation && matchesDate
   })
 
   // Paginate doctors
@@ -49,9 +49,10 @@ const FindDoctorPage = () => {
   }
 
   const handleConfirmAppointment = () => {
-    if (!selectedTimeSlot) return
+    if (!selectedTimeSlot || !selectedDoctor || !selectedDate) return
+
     alert(
-      `Appointment confirmed with ${selectedDoctor?.name} on ${selectedDate?.toLocaleDateString()} at ${selectedTimeSlot}`,
+      `Appointment confirmed with ${selectedDoctor.name} on ${selectedDate.toLocaleDateString()} at ${selectedTimeSlot}`,
     )
 
     // Reset selection
@@ -66,63 +67,72 @@ const FindDoctorPage = () => {
   const resetFilters = () => {
     setSpecialty("all")
     setLocation("all")
-    setGender("all")
     setAvailableDate(undefined)
     setActiveFilters([])
+    setCurrentPage(1)
   }
 
   return (
-    <div className="container mx-auto px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Find a Doctor</h1>
-        <p className="text-gray-600">
-          Search for specialists and book appointments with our experienced healthcare providers
-        </p>
-      </div>
+    <div className="min-h-screen px-8 bg-gray-50">
+      <div className="container mx-auto px-4 py-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Find a Doctor</h1>
+          <p className="text-gray-600">
+            Search for specialists and book appointments with our experienced healthcare providers
+          </p>
+        </div>
 
-      {/* Search and Filters */}
-      <DoctorSearchFilters
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        specialty={specialty}
-        setSpecialty={setSpecialty}
-        location={location}
-        setLocation={setLocation}
-        gender={gender}
-        setGender={setGender}
-        availableDate={availableDate}
-        setAvailableDate={setAvailableDate}
-        activeFilters={activeFilters}
-        setActiveFilters={setActiveFilters}
-        onSearch={handleSearch}
-        onResetFilters={resetFilters}
-      />
+        {/* Search and Filters */}
+        <DoctorSearchFilters
+          searchQuery={searchQuery}
+          setSearchQuery={setSearchQuery}
+          specialty={specialty}
+          setSpecialty={setSpecialty}
+          location={location}
+          setLocation={setLocation}
+          availableDate={availableDate}
+          setAvailableDate={setAvailableDate}
+          activeFilters={activeFilters}
+          setActiveFilters={setActiveFilters}
+          onSearch={handleSearch}
+          onResetFilters={resetFilters}
+        />
 
-      {/* Doctor Listing */}
-      <div className="space-y-6 mb-8">
-        {paginatedDoctors.length > 0 ? (
-          paginatedDoctors.map((doctor) => (
-            <DoctorCard
-              key={doctor.id}
-              doctor={doctor}
-              onBookAppointment={handleBookAppointment}
-              selectedDoctor={selectedDoctor}
-              selectedDate={selectedDate}
-              selectedTimeSlot={selectedTimeSlot}
-              setSelectedDate={setSelectedDate}
-              setSelectedTimeSlot={setSelectedTimeSlot}
-              onConfirmAppointment={handleConfirmAppointment}
-            />
-          ))
-        ) : (
-          <NoDoctorsFound />
+        {/* Results Summary */}
+        <div className="mb-6">
+          <p className="text-gray-600">
+            {filteredDoctors.length === 0
+              ? "No doctors found"
+              : `Showing ${paginatedDoctors.length} of ${filteredDoctors.length} doctors`}
+          </p>
+        </div>
+
+        {/* Doctor Listing */}
+        <div className="space-y-6 mb-8">
+          {paginatedDoctors.length > 0 ? (
+            paginatedDoctors.map((doctor) => (
+              <DoctorCard
+                key={doctor.id}
+                doctor={doctor}
+                onBookAppointment={handleBookAppointment}
+                selectedDoctor={selectedDoctor}
+                selectedDate={selectedDate}
+                selectedTimeSlot={selectedTimeSlot}
+                setSelectedDate={setSelectedDate}
+                setSelectedTimeSlot={setSelectedTimeSlot}
+                onConfirmAppointment={handleConfirmAppointment}
+              />
+            ))
+          ) : (
+            <NoDoctorsFound />
+          )}
+        </div>
+
+        {/* Pagination */}
+        {filteredDoctors.length > itemsPerPage && (
+          <DoctorPagination currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} />
         )}
       </div>
-
-      {/* Pagination */}
-      {filteredDoctors.length > 0 && (
-        <DoctorPagination currentPage={currentPage} totalPages={totalPages} setCurrentPage={setCurrentPage} />
-      )}
     </div>
   )
 }
