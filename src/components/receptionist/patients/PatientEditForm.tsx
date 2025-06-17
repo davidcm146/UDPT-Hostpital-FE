@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Save, X } from "lucide-react"
 import type { Patient } from "@/types/patient"
 import { calculateBMI, getBMICategory } from "@/data/patient"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 interface PatientEditFormProps {
   patient: Patient
@@ -43,16 +44,6 @@ export function PatientEditForm({ patient, onSave, onCancel }: PatientEditFormPr
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           Edit Patient Information
-          <div className="space-x-2">
-            <Button size="sm" onClick={handleSave}>
-              <Save className="h-4 w-4 mr-1" />
-              Save
-            </Button>
-            <Button size="sm" variant="outline" onClick={onCancel}>
-              <X className="h-4 w-4 mr-1" />
-              Cancel
-            </Button>
-          </div>
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -84,20 +75,11 @@ export function PatientEditForm({ patient, onSave, onCancel }: PatientEditFormPr
                   id="dateOfBirth"
                   type="date"
                   value={
-                    editForm.dateOfBirth instanceof Date
-                      ? editForm.dateOfBirth.toISOString().slice(0, 10)
-                      : editForm.dateOfBirth || ""
+                    editForm.DOB instanceof Date
+                      ? editForm.DOB.toISOString().slice(0, 10)
+                      : editForm.DOB || ""
                   }
-                  onChange={(e) => handleInputChange("dateOfBirth", e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="age">Age</Label>
-                <Input
-                  id="age"
-                  type="number"
-                  value={editForm.age}
-                  onChange={(e) => handleInputChange("age", Number.parseInt(e.target.value))}
+                  onChange={(e) => handleInputChange("DOB", e.target.value)}
                 />
               </div>
               <div>
@@ -164,15 +146,14 @@ export function PatientEditForm({ patient, onSave, onCancel }: PatientEditFormPr
               <div className="mt-2 p-2 bg-gray-50 rounded-md">
                 <span className="text-sm">BMI: </span>
                 <span
-                  className={`font-medium ${
-                    getBMICategory(bmi) === "Normal weight"
-                      ? "text-green-600"
-                      : getBMICategory(bmi) === "Underweight"
-                        ? "text-yellow-600"
-                        : getBMICategory(bmi) === "Overweight"
-                          ? "text-orange-600"
-                          : "text-red-600"
-                  }`}
+                  className={`font-medium ${getBMICategory(bmi) === "Normal weight"
+                    ? "text-green-600"
+                    : getBMICategory(bmi) === "Underweight"
+                      ? "text-yellow-600"
+                      : getBMICategory(bmi) === "Overweight"
+                        ? "text-orange-600"
+                        : "text-red-600"
+                    }`}
                 >
                   {bmi} ({getBMICategory(bmi)})
                 </span>
@@ -212,72 +193,61 @@ export function PatientEditForm({ patient, onSave, onCancel }: PatientEditFormPr
                   rows={2}
                 />
               </div>
-              <div>
-                <Label htmlFor="currentMedications">Current Medications</Label>
-                <Textarea
-                  id="currentMedications"
-                  value={editForm.currentMedications || ""}
-                  onChange={(e) => handleInputChange("currentMedications", e.target.value)}
-                  rows={2}
-                />
-              </div>
-              <div>
-                <Label htmlFor="chronicConditions">Chronic Conditions</Label>
-                <Input
-                  id="chronicConditions"
-                  value={editForm.chronicConditions || ""}
-                  onChange={(e) => handleInputChange("chronicConditions", e.target.value)}
-                />
-              </div>
             </div>
           </div>
 
-          {/* Emergency Contact */}
           <div>
-            <h3 className="text-lg font-medium mb-4">Emergency Contact</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <h3 className="text-lg font-medium mb-4">Life Factors</h3>
+            <div className="space-y-4">
               <div>
-                <Label htmlFor="emergencyContactName">Emergency Contact Name</Label>
-                <Input
-                  id="emergencyContactName"
-                  value={editForm.emergencyContactName || ""}
-                  onChange={(e) => handleInputChange("emergencyContactName", e.target.value)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="emergencyContactPhone">Emergency Contact Phone</Label>
-                <Input
-                  id="emergencyContactPhone"
-                  value={editForm.emergencyContactPhone || ""}
-                  onChange={(e) => handleInputChange("emergencyContactPhone", e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
+                <Label htmlFor="smokingStatus">Smoking Status</Label>
+                <Select
+                  value={editForm.smokingStatus || ""}
+                  onValueChange={(value) => handleInputChange("smokingStatus", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="None">None</SelectItem>
+                    <SelectItem value="Former">Former smoker</SelectItem>
+                    <SelectItem value="Current">Current smoker</SelectItem>
+                  </SelectContent>
+                </Select>
 
-          {/* Insurance Information */}
-          <div>
-            <h3 className="text-lg font-medium mb-4">Insurance Information</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="insuranceProvider">Insurance Provider</Label>
-                <Input
-                  id="insuranceProvider"
-                  value={editForm.insuranceProvider || ""}
-                  onChange={(e) => handleInputChange("insuranceProvider", e.target.value)}
-                />
               </div>
+
               <div>
-                <Label htmlFor="insurancePolicyNumber">Policy Number</Label>
-                <Input
-                  id="insurancePolicyNumber"
-                  value={editForm.insurancePolicyNumber || ""}
-                  onChange={(e) => handleInputChange("insurancePolicyNumber", e.target.value)}
-                />
+                <Label htmlFor="alcoholConsumption">Alcohol Consumption</Label>
+                <Select
+                  value={editForm.alcoholConsumption || ""}
+                  onValueChange={(value) => handleInputChange("alcoholConsumption", value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="None">None</SelectItem>
+                    <SelectItem value="Occasional">Occasional</SelectItem>
+                    <SelectItem value="Regular">Regular</SelectItem>
+                    <SelectItem value="Heavy">Heavy</SelectItem>
+                  </SelectContent>
+                </Select>
+
               </div>
             </div>
           </div>
         </div>
+        <div className="space-x-2 mt-6 float-end">
+            <Button size="sm" onClick={handleSave}>
+              <Save className="h-4 w-4 mr-1" />
+              Save
+            </Button>
+            <Button size="sm" variant="outline" onClick={onCancel}>
+              <X className="h-4 w-4 mr-1" />
+              Cancel
+            </Button>
+          </div>
       </CardContent>
     </Card>
   )

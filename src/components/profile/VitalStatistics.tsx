@@ -4,16 +4,22 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Ruler, Weight, Activity } from "lucide-react"
 import type { Patient } from "@/types/patient"
-import { calculateBMI, getBMICategory, formatHeight, formatWeight } from "@/data/patient"
+import { calculateBMI, getBMICategory } from "@/data/patient"
+import { formatHeight, formatWeight } from "@/lib/PatientUtils"
 
 interface VitalStatisticsProps {
   patientData: Patient
   isEditing: boolean
+  onChange: (data: Patient) => void
 }
 
-export function VitalStatistics({ patientData, isEditing }: VitalStatisticsProps) {
+export function VitalStatistics({ patientData, isEditing, onChange }: VitalStatisticsProps) {
   const bmi = patientData.weight ? calculateBMI(patientData.height, patientData.weight) : 0
   const bmiCategory = bmi > 0 ? getBMICategory(bmi) : "Unknown"
+
+  const handleFieldChange = (field: keyof Patient, value: any) => {
+    onChange({ ...patientData, [field]: value })
+  }
 
   const getBMIColor = (category: string) => {
     switch (category) {
@@ -38,10 +44,17 @@ export function VitalStatistics({ patientData, isEditing }: VitalStatisticsProps
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Height */}
           <div>
             <Label htmlFor="height">Height</Label>
             {isEditing ? (
-              <Input id="height" type="number" defaultValue={patientData.height} placeholder="cm" />
+              <Input
+                id="height"
+                type="number"
+                value={patientData.height}
+                placeholder="cm"
+                onChange={(e) => handleFieldChange("height", Number(e.target.value))}
+              />
             ) : (
               <div className="flex items-center mt-1">
                 <Ruler className="h-4 w-4 text-gray-400 mr-2" />
@@ -50,10 +63,17 @@ export function VitalStatistics({ patientData, isEditing }: VitalStatisticsProps
             )}
           </div>
 
+          {/* Weight */}
           <div>
             <Label htmlFor="weight">Weight</Label>
             {isEditing ? (
-              <Input id="weight" type="number" defaultValue={patientData.weight} placeholder="kg" />
+              <Input
+                id="weight"
+                type="number"
+                value={patientData.weight}
+                placeholder="kg"
+                onChange={(e) => handleFieldChange("weight", Number(e.target.value))}
+              />
             ) : (
               <div className="flex items-center mt-1">
                 <Weight className="h-4 w-4 text-gray-400 mr-2" />
@@ -62,6 +82,7 @@ export function VitalStatistics({ patientData, isEditing }: VitalStatisticsProps
             )}
           </div>
 
+          {/* BMI */}
           <div>
             <Label htmlFor="bmi">BMI</Label>
             <div className="flex items-center mt-1">
@@ -72,13 +93,15 @@ export function VitalStatistics({ patientData, isEditing }: VitalStatisticsProps
           </div>
         </div>
 
+        {/* Blood Type */}
         <div className="mt-4">
           <Label htmlFor="bloodType">Blood Type</Label>
           {isEditing ? (
             <select
               id="bloodType"
               className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              defaultValue={patientData.bloodType}
+              value={patientData.bloodType}
+              onChange={(e) => handleFieldChange("bloodType", e.target.value)}
             >
               <option value="A+">A+</option>
               <option value="A-">A-</option>

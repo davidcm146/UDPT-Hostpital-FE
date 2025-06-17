@@ -1,47 +1,149 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { Clock, Calendar, X } from "lucide-react"
-import type { Doctor } from "@/types/doctor"
+import { Calendar, Clock } from "lucide-react"
+import { mockSchedules } from "@/data/schedule"
 import type { Schedule } from "@/types/schedule"
-import { getScheduleByDoctorId, updateDoctorSchedule } from "@/data/doctor-schedule"
+import type { Doctor } from "@/types/doctor"
+import { formatDate } from "@/lib/DateTimeUtils"
+import ScheduleItem from "./ScheduleItem"
 
 interface ScheduleTabProps {
   doctorData: Doctor
-  isEditing: boolean
-  onSave?: (data: Partial<Schedule>) => void
+  // isEditing: boolean
+  currentDate?: Date
+  onSave?: (schedules: Schedule[]) => void
 }
 
-const ScheduleTab = ({ doctorData, isEditing, onSave }: ScheduleTabProps) => {
-  const [schedule, setSchedule] = useState<Schedule | null>(null)
+const ScheduleTab = ({ doctorData, currentDate = new Date(), onSave }: ScheduleTabProps) => {
+  const [schedules, setSchedules] = useState<Schedule[]>([])
+  const [loading, setLoading] = useState(true)
+
+  // Memoize the next 7 days to prevent infinite re-renders
+  const next7Days = useMemo(() => {
+    const getDatePlusDays = (date: Date, days: number): Date => {
+      const result = new Date(date)
+      result.setDate(result.getDate() + days)
+      return result
+    }
+
+    return Array.from({ length: 7 }, (_, i) => getDatePlusDays(currentDate, i))
+  }, [currentDate])
+
+  // Memoize the current date string to prevent unnecessary re-renders
+  const currentDateString = useMemo(() => {
+    return currentDate.toISOString().split("T")[0]
+  }, [currentDate])
 
   useEffect(() => {
-    const doctorSchedule = getScheduleByDoctorId(doctorData.id)
-    setSchedule(doctorSchedule || null)
-  }, [doctorData.id])
+    const fetchSchedules = async () => {
+      setLoading(true)
+      try {
+        // Filter schedules for this doctor and next 7 days
+        const doctorSchedules = mockSchedules.filter((schedule) => {
+          const scheduleDate = new Date(schedule.date)
+          const isInNext7Days = next7Days.some(
+            (day) => day.toISOString().split("T")[0] === scheduleDate.toISOString().split("T")[0],
+          )
+          return schedule.doctorID === doctorData.userId && isInNext7Days
+        })
 
-  const handleSave = () => {
-    if (schedule) {
-      const success = updateDoctorSchedule(doctorData.id, schedule)
-      if (success) {
-        onSave?.(schedule)
+        setSchedules(doctorSchedules)
+      } catch (error) {
+        console.error("Error fetching schedules:", error)
+        setSchedules([])
+      } finally {
+        setLoading(false)
       }
+    }
+
+    fetchSchedules()
+  }, [doctorData.userId, currentDateString]) // Use memoized values
+
+  const getScheduleForDate = (date: Date): Schedule | null => {
+    const dateString = date.toISOString().split("T")[0]
+    return (
+      schedules.find((schedule) => {
+        const scheduleDate = new Date(schedule.date).toISOString().split("T")[0]
+        return scheduleDate === dateString
+      }) || null
+    )
+  }
+
+  const handleScheduleChange = (date: Date, field: "startTime" | "endTime", value: string) => {
+    const dateString = date.toISOString().split("T")[0]
+    const existingSchedule = getScheduleForDate(date)
+
+    if (existingSchedule) {
+      // Update existing schedule
+      setSchedules((prev) =>
+        prev.map((schedule) =>
+          schedule.id === existingSchedule.id
+            ? { ...schedule, [field]: value, updatedAt: new Date().toISOString() }
+            : schedule,
+        ),
+      )
+    } else {
+      // This shouldn't happen if we use handleAddHours properly
+      console.warn("Trying to change schedule that doesn't exist")
     }
   }
 
-  if (!schedule) {
+  const handleAddHours = (date: Date) => {
+    const dateString = date.toISOString().split("T")[0]
+    const existingSchedule = getScheduleForDate(date)
+
+    if (!existingSchedule) {
+      const newSchedule: Schedule = {
+        id: `temp-${Date.now()}`,
+        doctorID: doctorData.userId,
+        date: dateString,
+        startTime: "09:00",
+        endTime: "17:00",
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      }
+      setSchedules((prev) => [...prev, newSchedule])
+    }
+  }
+
+  const handleRemoveSchedule = (date: Date) => {
+    const schedule = getScheduleForDate(date)
+    if (schedule) {
+      setSchedules((prev) => prev.filter((s) => s.id !== schedule.id))
+    }
+  }
+
+  const handleSave = async () => {
+    try {
+      // TODO: Save via API
+      console.log("Saving schedules:", schedules)
+      onSave?.(schedules)
+    } catch (error) {
+      console.error("Error saving schedules:", error)
+    }
+  }
+
+  const handleClearAll = () => {
+    setSchedules([])
+  }
+
+  if (loading) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>Schedule & Availability</CardTitle>
-          <CardDescription>No schedule found for this doctor</CardDescription>
+          <CardDescription>Loading schedule...</CardDescription>
         </CardHeader>
         <CardContent>
-          <Button className="bg-teal-600 hover:bg-teal-700">Create Schedule</Button>
+          <div className="animate-pulse space-y-4">
+            {[...Array(7)].map((_, i) => (
+              <div key={i} className="h-12 bg-gray-200 rounded"></div>
+            ))}
+          </div>
         </CardContent>
       </Card>
     )
@@ -51,118 +153,55 @@ const ScheduleTab = ({ doctorData, isEditing, onSave }: ScheduleTabProps) => {
     <Card>
       <CardHeader>
         <CardTitle>Schedule & Availability</CardTitle>
-        <CardDescription>Manage your working hours and availability</CardDescription>
+        <CardDescription>
+          Manage working hours for the next 7 days starting from {formatDate(currentDate)}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
           <div>
-            <h3 className="text-lg font-medium flex items-center">
+            <h3 className="text-lg font-medium flex items-center mb-4">
               <Clock className="h-4 w-4 text-gray-400 mr-2" />
-              Regular Working Hours
+              Weekly Schedule
             </h3>
-            <div className="mt-4 border rounded-md overflow-hidden">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Day
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Hours
-                    </th>
-                    <th
-                      scope="col"
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Status
-                    </th>
-                    {isEditing && (
-                      <th
-                        scope="col"
-                        className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                      >
-                        Actions
-                      </th>
-                    )}
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {schedule.regularHours.map((scheduleItem, index) => (
-                    <tr key={index}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        {scheduleItem.day}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {isEditing ? (
-                          <Input defaultValue={scheduleItem.hours} className="w-full" />
-                        ) : (
-                          scheduleItem.hours
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        <span
-                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                            scheduleItem.isAvailable ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {scheduleItem.isAvailable ? "Available" : "Closed"}
-                        </span>
-                      </td>
-                      {isEditing && (
-                        <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <Button variant="ghost" className="text-teal-600 hover:text-teal-900">
-                            Edit
-                          </Button>
-                        </td>
-                      )}
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+
+            <div className="space-y-3">
+              {next7Days.map((date) => {
+                const schedule = getScheduleForDate(date)
+                return (
+                  <ScheduleItem
+                    key={date.toISOString()}
+                    date={date}
+                    schedule={schedule}
+                    // isEditing={isEditing}
+                    // onChange={handleScheduleChange}
+                    // onRemove={handleRemoveSchedule}
+                    // onAddHours={handleAddHours}
+                  />
+                )
+              })}
             </div>
           </div>
 
-          <Separator />
+          {/* <div className="flex items-center justify-between">
 
-          <div>
-            <h3 className="text-lg font-medium flex items-center">
-              <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-              Vacation & Time Off
-            </h3>
-            {isEditing ? (
-              <div className="mt-2 space-y-2">
-                {schedule.vacationDates.map((date, index) => (
-                  <div key={index} className="flex items-center">
-                    <Input defaultValue={date} className="flex-1" />
-                    <Button variant="ghost" size="icon" className="ml-2 h-8 w-8 text-gray-400 hover:text-gray-500">
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-                ))}
-                <Button variant="outline" className="mt-2">
-                  Add Vacation Period
+            {isEditing && (
+              <div className="flex space-x-2 w-full justify-end">
+                <Button variant="outline" onClick={handleClearAll}>
+                  Clear All
+                </Button>
+                <Button className="bg-teal-600 hover:bg-teal-700" onClick={handleSave}>
+                  Save Changes
                 </Button>
               </div>
-            ) : (
-              <ul className="mt-2 space-y-1 list-disc list-inside text-gray-700">
-                {schedule.vacationDates.map((date, index) => (
-                  <li key={index}>{date}</li>
-                ))}
-              </ul>
             )}
-          </div>
+          </div> */}
 
-          {isEditing && (
-            <div className="mt-6 flex justify-end">
-              <Button className="bg-teal-600 hover:bg-teal-700" onClick={handleSave}>
-                Save Changes
-              </Button>
+          {schedules.length === 0 && (
+            <div className="text-center py-8">
+              <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Schedule Set</h3>
+              <p className="text-gray-600">No working hours have been configured for the next 7 days.</p>
             </div>
           )}
         </div>

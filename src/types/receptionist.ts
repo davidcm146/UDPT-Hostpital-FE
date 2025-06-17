@@ -1,11 +1,9 @@
-export interface Receptionist {
-  id: string
-  name: string
-  email: string
-  phone: string
-  position: string
+import { User } from "./user"
+
+export interface Receptionist extends User {
+  userId: string
+  education: string
+  experience: string
+  role: "Receptionist"
   department: string
-  employeeId: string
-  profilePicture?: string
-  isActive: boolean
 }

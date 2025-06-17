@@ -1,11 +1,15 @@
+"use client"
+
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ClipboardList, Pill } from "lucide-react"
 import type { MedicalRecord } from "@/types/medical-record"
+import type { Prescription } from "@/types/prescription"
 import { MedicalRecordDetailsTab } from "./MedicalRecordDetailsTab"
 import { MedicalRecordPrescriptionTab } from "./MedicalRecordPrescriptionTab"
-import { formatDate } from "@/lib/MedicalRecordUtils"
+import { formatDate } from "@/lib/DateTimeUtils"
+import { getPrescriptionsByMedicalRecord } from "@/data/prescription"
 
 interface MedicalRecordDetailsDialogProps {
   open: boolean
@@ -23,11 +27,14 @@ export function MedicalRecordDetailsDialog({
   const [activeTab, setActiveTab] = useState("details")
 
   // Find the selected medical record
-  const medicalRecord = medicalRecords.find((record) => record.recordID === recordId)
+  const medicalRecord = medicalRecords.find((record) => record.id === recordId)
 
   if (!medicalRecord) {
     return null
   }
+
+  // Fetch prescriptions for this record (mock data)
+  const prescriptions: Prescription[] = getPrescriptionsByMedicalRecord(medicalRecord.id)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -52,7 +59,7 @@ export function MedicalRecordDetailsDialog({
             </TabsTrigger>
             <TabsTrigger value="prescription" className="flex items-center">
               <Pill className="mr-2 h-4 w-4" />
-              Prescription
+              Prescription ({prescriptions.length})
             </TabsTrigger>
           </TabsList>
 
@@ -61,7 +68,7 @@ export function MedicalRecordDetailsDialog({
           </TabsContent>
 
           <TabsContent value="prescription">
-            <MedicalRecordPrescriptionTab medicalRecord={medicalRecord} />
+            <MedicalRecordPrescriptionTab prescriptions={prescriptions} />
           </TabsContent>
         </Tabs>
       </DialogContent>

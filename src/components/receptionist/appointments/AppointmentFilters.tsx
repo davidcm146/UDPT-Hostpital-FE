@@ -1,19 +1,28 @@
 "use client"
 
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Filter, CalendarIcon } from "lucide-react"
 import { Calendar } from "@/components/ui/calendar"
-import { Search, X, CalendarIcon } from "lucide-react"
-import { format } from "date-fns"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuCheckboxItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
+import { AppointmentSearch } from "./AppointmentSearch"
+import { formatDate } from "@/lib/DateTimeUtils"
 
 interface AppointmentFiltersProps {
   searchTerm: string
-  selectedDate: string
-  onSearchChange: (value: string) => void
-  onDateChange: (value: string) => void
+  selectedDate: Date | string | undefined
+  onSearchChange: (search: string) => void
+  onDateChange: (date: Date | undefined) => void
+  onFilterChange: (showUrgentOnly: boolean, appointmentStatuses: string[], appointmentTypes: string[]) => void
 }
 
 export function AppointmentFilters({
@@ -21,73 +30,116 @@ export function AppointmentFilters({
   selectedDate,
   onSearchChange,
   onDateChange,
+  onFilterChange,
 }: AppointmentFiltersProps) {
-  const handleClearFilters = () => {
-    onSearchChange("")
-    onDateChange("")
-  }
+  const [showUrgentOnly, setShowUrgentOnly] = useState(false)
+  const [appointmentStatuses, setAppointmentStatuses] = useState<string[]>([])
+  const [appointmentTypes, setAppointmentTypes] = useState<string[]>([])
 
-  const selectedDateObj = selectedDate ? new Date(selectedDate) : undefined
+  // Notify parent component when filters change
+  useEffect(() => {
+    onFilterChange(showUrgentOnly, appointmentStatuses, appointmentTypes)
+  }, [showUrgentOnly, appointmentStatuses, appointmentTypes, onFilterChange])
 
-  const handleDateSelect = (date: Date | undefined) => {
-    if (date) {
-      onDateChange(format(date, "yyyy-MM-dd"))
-    } else {
-      onDateChange("")
-    }
-  }
+  // Active filters count
+  const activeFilterCount =
+    (showUrgentOnly ? 1 : 0) + appointmentStatuses.length + appointmentTypes.length + (selectedDate ? 1 : 0)
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <Label htmlFor="search">Search</Label>
-          <div className="relative mt-2">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <Input
-              id="search"
-              placeholder="Search by name, appointment ID, phone..."
-              value={searchTerm}
-              onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-10"
-            />
+    <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+      {/* Search Input */}
+      <AppointmentSearch searchTerm={searchTerm} onSearchChange={onSearchChange} />
+
+      {/* Date Filter with Calendar */}
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn(
+              "w-full md:w-[240px] justify-start text-left font-normal bg-white",
+              !selectedDate && "text-muted-foreground",
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {selectedDate ? formatDate(selectedDate) : <span>Pick a date</span>}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={selectedDate ? (typeof selectedDate === "string" ? new Date(selectedDate) : selectedDate) : undefined}
+            onSelect={(date) => onDateChange(date)}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
+
+      {/* Advanced Filters Dropdown */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" className="w-full md:w-auto relative bg-white">
+            <Filter className="mr-2 h-4 w-4" />
+            Filters
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-teal-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-56">
+          <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuCheckboxItem checked={showUrgentOnly} onCheckedChange={setShowUrgentOnly}>
+            Urgent Appointments Only
+          </DropdownMenuCheckboxItem>
+
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel>Status</DropdownMenuLabel>
+          {["PENDING", "CONFIRMED", "CANCELLED"].map((status) => (
+            <DropdownMenuCheckboxItem
+              key={status}
+              checked={appointmentStatuses.includes(status)}
+              onCheckedChange={(checked) =>
+                setAppointmentStatuses((prev) => (checked ? [...prev, status] : prev.filter((s) => s !== status)))
+              }
+            >
+              {status.charAt(0).toUpperCase() + status.slice(1).toLowerCase()}
+            </DropdownMenuCheckboxItem>
+          ))}
+
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel>Appointment Type</DropdownMenuLabel>
+          {["EMERGENCY", "CHECKUP", "FOLLOW-UP"].map((type) => (
+            <DropdownMenuCheckboxItem
+              key={type}
+              checked={appointmentTypes.includes(type)}
+              onCheckedChange={(checked) =>
+                setAppointmentTypes((prev) => (checked ? [...prev, type] : prev.filter((t) => t !== type)))
+              }
+            >
+              {type.charAt(0).toUpperCase() + type.slice(1).toLowerCase()}
+            </DropdownMenuCheckboxItem>
+          ))}
+
+          <DropdownMenuSeparator />
+          <div className="p-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full text-xs"
+              onClick={() => {
+                setShowUrgentOnly(false)
+                setAppointmentStatuses([])
+                setAppointmentTypes([])
+                onDateChange(undefined)
+              }}
+            >
+              Clear All Filters
+            </Button>
           </div>
-        </div>
-
-        <div>
-          <Label htmlFor="date">Appointment Date</Label>
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className={cn(
-                  "w-full justify-start text-left font-normal mt-2",
-                  !selectedDate && "text-muted-foreground",
-                )}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                {selectedDate ? format(selectedDateObj!, "PPP") : "Select date"}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-0" align="start">
-              <Calendar mode="single" selected={selectedDateObj} onSelect={handleDateSelect} initialFocus />
-            </PopoverContent>
-          </Popover>
-        </div>
-      </div>
-
-      <div className="flex justify-end">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleClearFilters}
-          className="flex items-center gap-1"
-          disabled={!searchTerm && !selectedDate}
-        >
-          <X className="h-4 w-4" />
-          Clear Filters
-        </Button>
-      </div>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 }

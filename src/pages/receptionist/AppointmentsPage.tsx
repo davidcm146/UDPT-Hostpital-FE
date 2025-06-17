@@ -1,183 +1,164 @@
 "use client"
 
-import { useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ClipboardList } from "lucide-react"
+import { useState, useMemo } from "react"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
+import { AppointmentHeader } from "@/components/receptionist/appointments/AppointmentHeader"
 import { AppointmentFilters } from "@/components/receptionist/appointments/AppointmentFilters"
-import { AppointmentCard } from "@/components/receptionist/appointments/AppointmentCard"
+import { AppointmentTabs } from "@/components/receptionist/appointments/AppointmentTabs"
+import { AppointmentList } from "@/components/receptionist/appointments/AppointmentList"
 import { mockAppointments } from "@/data/appointment"
+import { getPatientById } from "@/data/patient"
 import type { Appointment } from "@/types/appointment"
 
-const ReceptionistAppointmentListPage = () => {
+export default function AppointmentConfirmationPage() {
   const [appointments, setAppointments] = useState<Appointment[]>(mockAppointments)
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedDate, setSelectedDate] = useState("")
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined)
+  const [activeTab, setActiveTab] = useState("PENDING")
+  const [showUrgentOnly, setShowUrgentOnly] = useState(false)
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([])
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([])
 
-  // Mock data for patient and doctor names (in real app, this would come from API)
-  const getPatientName = (patientID: string) => {
-    const patientNames: Record<string, string> = {
-      "550e8400-e29b-41d4-a716-446655440201": "John Smith",
-      "550e8400-e29b-41d4-a716-446655440202": "Jane Doe",
-      "550e8400-e29b-41d4-a716-446655440203": "Bob Johnson",
-      "550e8400-e29b-41d4-a716-446655440204": "Alice Brown",
-    }
-    return patientNames[patientID] || "Unknown Patient"
+  // Handle filter changes
+  const handleFilterChange = (urgent: boolean, statuses: string[], types: string[]) => {
+    setShowUrgentOnly(urgent)
+    setSelectedStatuses(statuses)
+    setSelectedTypes(types)
   }
 
-  const getDoctorName = (doctorID: string) => {
-    const doctorNames: Record<string, string> = {
-      "550e8400-e29b-41d4-a716-446655440001": "Dr. Sarah Wilson",
-      "550e8400-e29b-41d4-a716-446655440002": "Dr. Michael Chen",
-      "550e8400-e29b-41d4-a716-446655440003": "Dr. Emily Davis",
-    }
-    return doctorNames[doctorID] || "Unknown Doctor"
+  // Check if any filters are active (excluding tab filter)
+  const hasActiveFilters = useMemo(() => {
+    return (
+      searchTerm !== "" ||
+      selectedDate !== undefined ||
+      showUrgentOnly ||
+      selectedStatuses.length > 0 ||
+      selectedTypes.length > 0
+    )
+  }, [searchTerm, selectedDate, showUrgentOnly, selectedStatuses, selectedTypes])
+
+  // Filter appointments based on all criteria EXCEPT tab filter (for counting)
+  const baseFilteredAppointments = useMemo(() => {
+    return appointments.filter((appointment) => {
+      const patientName = getPatientById(appointment.patientID)?.name
+      const appointmentDate =
+        typeof appointment.appointmentDate === "string"
+          ? new Date(appointment.appointmentDate)
+          : appointment.appointmentDate
+
+      // Search filter
+      const matchesSearch =
+        searchTerm === "" ||
+        patientName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        appointment.appointmentID.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        appointment.reason?.toLowerCase().includes(searchTerm.toLowerCase())
+
+      // Date filter
+      const matchesDate = !selectedDate || appointmentDate.toDateString() === selectedDate.toDateString()
+
+      // Urgent filter
+      const isUrgent = appointment.type === "EMERGENCY"
+      const matchesUrgent = !showUrgentOnly || isUrgent
+
+      // Status filter
+      const matchesStatus = selectedStatuses.length === 0 || selectedStatuses.includes(appointment.status)
+
+      // Type filter
+      const matchesType = selectedTypes.length === 0 || selectedTypes.includes(appointment.type)
+
+      return matchesSearch && matchesDate && matchesUrgent && matchesStatus && matchesType
+    })
+  }, [appointments, searchTerm, selectedDate, showUrgentOnly, selectedStatuses, selectedTypes])
+
+  // Filter appointments for display (includes tab filter)
+  const filteredAppointments = useMemo(() => {
+    return baseFilteredAppointments.filter((appointment) => {
+      return activeTab === "all" || appointment.status === activeTab
+    })
+  }, [baseFilteredAppointments, activeTab])
+
+  // Calculate counts for tabs (based on filtered results, not tab-specific)
+  const tabCounts = useMemo(
+    () => ({
+      pending: baseFilteredAppointments.filter((apt) => apt.status === "PENDING").length,
+      confirmed: baseFilteredAppointments.filter((apt) => apt.status === "CONFIRMED").length,
+      cancelled: baseFilteredAppointments.filter((apt) => apt.status === "CANCELLED").length,
+    }),
+    [baseFilteredAppointments],
+  )
+
+  // Calculate total appointment counts (for header)
+  const totalCounts = useMemo(
+    () => ({
+      pending: appointments.filter((apt) => apt.status === "PENDING").length,
+      confirmed: appointments.filter((apt) => apt.status === "CONFIRMED").length,
+      cancelled: appointments.filter((apt) => apt.status === "CANCELLED").length,
+    }),
+    [appointments],
+  )
+
+  const handleEdit = (appointmentID: string) => {
+    console.log("Edit appointment:", appointmentID)
   }
 
-  const filteredAppointments = appointments.filter((appointment) => {
-    const patientName = getPatientName(appointment.patientID)
-    const doctorName = getDoctorName(appointment.doctorID)
-
-    const matchesSearch =
-      patientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      appointment.appointmentID.toLowerCase().includes(searchTerm.toLowerCase())
-
-    const matchesDate = selectedDate === "" || appointment.appointmentDate.toISOString().split("T")[0] === selectedDate
-
-    return matchesSearch && matchesDate
-  })
-
-  const handleEditAppointment = (appointment: Appointment) => {
-    console.log("Edit appointment:", appointment)
-    // Implement edit functionality
-  }
-
-  const handleCancelAppointment = (appointmentID: string) => {
+  const handleDecline = (appointmentID: string) => {
     setAppointments(
-      appointments.map((apt) => (apt.appointmentID === appointmentID ? { ...apt, status: "cancelled" as const } : apt)),
+      appointments.map((apt) =>
+        apt.appointmentID === appointmentID ? { ...apt, status: "CANCELLED" as const, updatedAt: new Date() } : apt,
+      ),
     )
   }
 
-  const handleDeleteAppointment = (appointmentID: string) => {
+  const handleDelete = (appointmentID: string) => {
     setAppointments(appointments.filter((apt) => apt.appointmentID !== appointmentID))
   }
 
-  // Group appointments by status
-  const groupedAppointments = {
-    pending: filteredAppointments.filter((apt) => apt.status === "pending"),
-    confirmed: filteredAppointments.filter((apt) => apt.status === "confirmed"),
-    completed: filteredAppointments.filter((apt) => apt.status === "completed"),
-    cancelled: filteredAppointments.filter((apt) => apt.status === "cancelled"),
+  const handleConfirmAllPending = () => {
+    setAppointments(
+      appointments.map((apt) =>
+        apt.status === "PENDING" ? { ...apt, status: "CONFIRMED" as const, updatedAt: new Date() } : apt,
+      ),
+    )
   }
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Appointment List</h1>
-        <p className="text-gray-600">View and manage all appointments</p>
-      </div>
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-7xl mx-auto space-y-6">
+        <AppointmentHeader pendingCount={totalCounts.pending} onConfirmAllPending={handleConfirmAllPending} />
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Pending</p>
-                <p className="text-2xl font-bold text-yellow-600">{groupedAppointments.pending.length}</p>
-              </div>
-              <ClipboardList className="h-8 w-8 text-yellow-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Confirmed</p>
-                <p className="text-2xl font-bold text-blue-600">{groupedAppointments.confirmed.length}</p>
-              </div>
-              <ClipboardList className="h-8 w-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Completed</p>
-                <p className="text-2xl font-bold text-green-600">{groupedAppointments.completed.length}</p>
-              </div>
-              <ClipboardList className="h-8 w-8 text-green-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Cancelled</p>
-                <p className="text-2xl font-bold text-red-600">{groupedAppointments.cancelled.length}</p>
-              </div>
-              <ClipboardList className="h-8 w-8 text-red-600" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+        <AppointmentFilters
+          searchTerm={searchTerm}
+          selectedDate={selectedDate}
+          onSearchChange={setSearchTerm}
+          onDateChange={setSelectedDate}
+          onFilterChange={handleFilterChange}
+        />
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <ClipboardList className="mr-2 h-5 w-5" />
-            All Appointments
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {/* Filters */}
-          <div className="mb-6">
-            <AppointmentFilters
-              searchTerm={searchTerm}
-              selectedDate={selectedDate}
-              onSearchChange={setSearchTerm}
-              onDateChange={setSelectedDate}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <AppointmentTabs activeTab={activeTab} onTabChange={setActiveTab} counts={tabCounts} />
+
+          <TabsContent value="PENDING" className="mt-6">
+            <AppointmentList
+              appointments={filteredAppointments}
+              emptyMessage="No pending appointments found"
+              onEdit={handleEdit}
+              onDecline={handleDecline}
             />
-          </div>
+          </TabsContent>
 
-          {/* Appointments by Status */}
-          <div className="space-y-6">
-            {Object.entries(groupedAppointments).map(([status, appointments]) => (
-              <div key={status}>
-                <h3 className="text-lg font-semibold mb-3 capitalize">
-                  {status} Appointments ({appointments.length})
-                </h3>
+          <TabsContent value="CONFIRMED" className="mt-6">
+            <AppointmentList
+              appointments={filteredAppointments}
+              emptyMessage="No confirmed appointments found"
+              onEdit={handleEdit}
+            />
+          </TabsContent>
 
-                {appointments.length === 0 ? (
-                  <Card>
-                    <CardContent className="p-6 text-center text-gray-500">No {status} appointments found</CardContent>
-                  </Card>
-                ) : (
-                  <div className="space-y-3">
-                    {appointments.map((appointment) => (
-                      <AppointmentCard
-                        key={appointment.appointmentID}
-                        appointment={appointment}
-                        patientName={getPatientName(appointment.patientID)}
-                        doctorName={getDoctorName(appointment.doctorID)}
-                        onEdit={handleEditAppointment}
-                        onCancel={handleCancelAppointment}
-                        onDelete={handleDeleteAppointment}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+          <TabsContent value="CANCELLED" className="mt-6">
+            <AppointmentList appointments={filteredAppointments} emptyMessage="No cancelled appointments found" />
+          </TabsContent>
+        </Tabs>
+      </div>
     </div>
   )
 }
-
-export default ReceptionistAppointmentListPage

@@ -20,13 +20,15 @@ import {
   History,
 } from "lucide-react"
 import type { DoctorPatient } from "@/data/doctor-patients"
-import { formatHeight, formatWeight, calculateBMI, getBMICategory } from "@/data/patient"
-import { getMedicalRecordsByPatient, getMedicalRecordStats } from "@/data/medical-record"
+import { calculateBMI, getBMICategory } from "@/data/patient"
+import { getMedicalRecordsByPatient, getDoctorMedicalRecordStats } from "@/data/medical-record"
 import { MedicalRecordCard } from "../medical-record/MedicalRecordCard"
 import { MedicalRecordDetailsDialog } from "../medical-record/MedicalRecordDetailsDialog"
 import { CreateMedicalRecordDialog } from "../medical-record/CreateMedicalRecordDialog"
 import { CreatePrescriptionDialog } from "../prescriptions/CreatePrescriptionDialog"
 import type { MedicalRecord } from "@/types/medical-record"
+import { calculateAge, formatHeight, formatWeight } from "@/lib/PatientUtils"
+import { getPrescriptionsByMedicalRecord } from "@/data/prescription"
 
 interface PatientMedicalRecordDialogProps {
   open: boolean
@@ -46,13 +48,13 @@ export function PatientMedicalRecordDialog({ open, onOpenChange, patient }: Pati
   // Load medical records for this patient
   useEffect(() => {
     if (patient) {
-      const records = getMedicalRecordsByPatient(patient.patientID)
+      const records = getMedicalRecordsByPatient(patient.userId)
       setMedicalRecords(records)
     }
   }, [patient])
 
   const recordStats = patient
-    ? getMedicalRecordStats(patient.patientID)
+    ? getDoctorMedicalRecordStats(patient.userId)
     : { total: 0, active: 0, totalPrescriptions: 0, lastVisit: null }
 
   const bmi = patient?.weight ? calculateBMI(patient.height, patient.weight) : 0
@@ -74,7 +76,7 @@ export function PatientMedicalRecordDialog({ open, onOpenChange, patient }: Pati
   }
 
   const handleViewRecordDetails = (recordID: string) => {
-    const record = medicalRecords.find((r) => r.recordID === recordID)
+    const record = medicalRecords.find((r) => r.id === recordID)
     if (record) {
       setSelectedRecord(record)
       setRecordDetailsOpen(true)
@@ -112,10 +114,10 @@ export function PatientMedicalRecordDialog({ open, onOpenChange, patient }: Pati
                 <Stethoscope className="mr-2 h-4 w-4" />
                 Medical History
               </TabsTrigger>
-              <TabsTrigger value="records" className="flex items-center">
+              {/* <TabsTrigger value="records" className="flex items-center">
                 <FileText className="mr-2 h-4 w-4" />
                 Medical Records ({recordStats.total})
-              </TabsTrigger>
+              </TabsTrigger> */}
             </TabsList>
 
             {/* Patient Overview Tab */}
@@ -137,7 +139,9 @@ export function PatientMedicalRecordDialog({ open, onOpenChange, patient }: Pati
                         <div className="flex items-center">
                           <Calendar className="h-4 w-4 text-gray-400 mr-2" />
                           <span className="font-medium">Age:</span>
-                          <span className="ml-2">{patient?.age} years old</span>
+                          <span className="ml-2">
+                            {patient?.DOB ? `${calculateAge(patient.DOB)} years old` : "N/A"}
+                          </span>
                         </div>
                         <div className="flex items-center">
                           <User className="h-4 w-4 text-gray-400 mr-2" />
@@ -165,11 +169,6 @@ export function PatientMedicalRecordDialog({ open, onOpenChange, patient }: Pati
                           <MapPin className="h-4 w-4 text-gray-400 mr-2" />
                           <span className="font-medium">Address:</span>
                           <span className="ml-2">{patient?.address}</span>
-                        </div>
-                        <div className="flex items-center">
-                          <FileText className="h-4 w-4 text-gray-400 mr-2" />
-                          <span className="font-medium">MRN:</span>
-                          <span className="ml-2">{patient?.medicalRecordNumber}</span>
                         </div>
                       </div>
                     </div>
@@ -202,25 +201,6 @@ export function PatientMedicalRecordDialog({ open, onOpenChange, patient }: Pati
                         <Activity className="h-6 w-6 text-orange-600 mx-auto mb-2" />
                         <p className="text-sm font-medium text-gray-500">BMI Category</p>
                         {bmi > 0 && <Badge className={getBMIColor(bmiCategory)}>{bmiCategory}</Badge>}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Emergency Contact */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Emergency Contact</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <p className="font-medium">Contact Person:</p>
-                        <p className="text-gray-700">{patient?.emergencyContactName}</p>
-                      </div>
-                      <div>
-                        <p className="font-medium">Phone Number:</p>
-                        <p className="text-gray-700">{patient?.emergencyContactPhone}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -260,35 +240,9 @@ export function PatientMedicalRecordDialog({ open, onOpenChange, patient }: Pati
                   </CardContent>
                 </Card>
 
-                {/* Current Medications */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Pill className="h-5 w-5 text-blue-500 mr-2" />
-                      Current Medications
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-blue-800">{patient?.currentMedications || "No current medications"}</p>
-                    </div>
-                  </CardContent>
-                </Card>
+                
 
-                {/* Chronic Conditions */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <Stethoscope className="h-5 w-5 text-orange-500 mr-2" />
-                      Chronic Conditions
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="p-4 bg-orange-50 border border-orange-200 rounded-lg">
-                      <p className="text-orange-800">{patient?.chronicConditions || "No chronic conditions"}</p>
-                    </div>
-                  </CardContent>
-                </Card>
+                
 
                 {/* Past Illness */}
                 <Card>
@@ -305,20 +259,7 @@ export function PatientMedicalRecordDialog({ open, onOpenChange, patient }: Pati
                   </CardContent>
                 </Card>
 
-                {/* Family History */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center">
-                      <User className="h-5 w-5 text-gray-500 mr-2" />
-                      Family Medical History
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                      <p className="text-gray-800">{patient?.familyHistory || "No significant family history"}</p>
-                    </div>
-                  </CardContent>
-                </Card>
+                
 
                 {/* Lifestyle Information */}
                 <Card>
@@ -357,7 +298,7 @@ export function PatientMedicalRecordDialog({ open, onOpenChange, patient }: Pati
                 </div>
 
                 {/* Medical Records Stats */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                {/* <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                   <Card>
                     <CardContent className="p-4 text-center">
                       <p className="text-2xl font-bold text-blue-600">{recordStats.total}</p>
@@ -384,17 +325,16 @@ export function PatientMedicalRecordDialog({ open, onOpenChange, patient }: Pati
                       </p>
                     </CardContent>
                   </Card>
-                </div>
+                </div> */}
 
                 {medicalRecords.length > 0 ? (
                   <div className="space-y-4">
                     {medicalRecords.map((record) => (
                       <MedicalRecordCard
-                        key={record.recordID}
+                        key={record.id}
                         record={record}
                         onViewDetails={handleViewRecordDetails}
-                        onAddPrescription={handleAddPrescriptionToRecord}
-                      />
+                        onAddPrescription={handleAddPrescriptionToRecord} prescriptionCount={getPrescriptionsByMedicalRecord(record.id).length}                      />
                     ))}
                   </div>
                 ) : (

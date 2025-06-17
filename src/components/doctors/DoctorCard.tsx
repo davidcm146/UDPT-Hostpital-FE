@@ -2,7 +2,7 @@
 
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { MapPin, Calendar, GraduationCap, Phone, Mail, Star } from "lucide-react"
+import { MapPin, Calendar, GraduationCap, Phone, Mail } from "lucide-react"
 import { Dialog, DialogTrigger } from "@/components/ui/dialog"
 import type { Doctor } from "@/types/doctor"
 import AppointmentDialog from "./AppointmentDialog"
@@ -23,9 +23,7 @@ const DoctorCard = ({
   onBookAppointment,
   selectedDoctor,
   selectedDate,
-  selectedTimeSlot,
   setSelectedDate,
-  setSelectedTimeSlot,
   onConfirmAppointment,
 }: DoctorCardProps) => {
   return (
@@ -34,7 +32,7 @@ const DoctorCard = ({
         <div className="flex flex-col md:flex-row">
           <div className="md:w-40 h-40 bg-gray-100 flex-shrink-0">
             <img
-              src={doctor.image || "/placeholder.svg?height=160&width=160"}
+              src={doctor.avatar || "/placeholder.svg?height=160&width=160"}
               alt={doctor.name}
               className="w-full h-full object-cover"
             />
@@ -44,12 +42,6 @@ const DoctorCard = ({
               <div className="flex-1">
                 <div className="flex items-center gap-2 mb-2">
                   <h3 className="text-xl font-semibold text-gray-900">{doctor.name}</h3>
-                  {doctor.rating && (
-                    <div className="flex items-center gap-1">
-                      <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                      <span className="text-sm text-gray-600">{doctor.rating}</span>
-                    </div>
-                  )}
                 </div>
                 <p className="text-gray-600 mb-4 font-medium">{doctor.specialty}</p>
 
@@ -62,10 +54,10 @@ const DoctorCard = ({
                     <Calendar className="w-4 h-4 text-teal-600 mr-2" />
                     <span className="text-sm">{doctor.experience} experience</span>
                   </div>
-                  {doctor.location && (
+                  {doctor.address && (
                     <div className="flex items-center text-gray-600">
                       <MapPin className="w-4 h-4 text-teal-600 mr-2" />
-                      <span className="text-sm">{doctor.location}</span>
+                      <span className="text-sm">{doctor.address}</span>
                     </div>
                   )}
                   <div className="flex items-center text-gray-600">
@@ -81,20 +73,6 @@ const DoctorCard = ({
 
               <div className="mt-4 flex flex-col md:mt-0 md:ml-4 md:text-right">
                 <div className="flex flex-col gap-y-4 h-52">
-                  {doctor.availability && (
-                    <div>
-                      <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${doctor.availability.includes("Available today")
-                            ? "bg-green-100 text-green-800"
-                            : "bg-blue-100 text-blue-800"
-                          }`}
-                      >
-                        <Calendar className="w-3 h-3 mr-1" />
-                        {doctor.availability}
-                      </span>
-                    </div>
-                  )}
-
                   <Dialog>
                     <DialogTrigger asChild>
                       <Button
@@ -107,9 +85,9 @@ const DoctorCard = ({
                     <AppointmentDialog
                       selectedDoctor={selectedDoctor}
                       selectedDate={selectedDate}
-                      selectedTimeSlot={selectedTimeSlot}
+                      
                       setSelectedDate={setSelectedDate}
-                      setSelectedTimeSlot={setSelectedTimeSlot}
+                      
                       onConfirmAppointment={onConfirmAppointment}
                     />
                   </Dialog>

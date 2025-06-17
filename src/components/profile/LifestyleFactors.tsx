@@ -6,9 +6,14 @@ import type { Patient } from "@/types/patient"
 interface LifestyleFactorsProps {
   patientData: Patient
   isEditing: boolean
+  onChange: (data: Patient) => void
 }
 
-export function LifestyleFactors({ patientData, isEditing }: LifestyleFactorsProps) {
+export function LifestyleFactors({ patientData, isEditing, onChange }: LifestyleFactorsProps) {
+  const handleFieldChange = (field: keyof Patient, value: any) => {
+    onChange({ ...patientData, [field]: value })
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -17,13 +22,15 @@ export function LifestyleFactors({ patientData, isEditing }: LifestyleFactorsPro
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Smoking Status */}
           <div>
             <Label htmlFor="smokingStatus">Smoking Status</Label>
             {isEditing ? (
               <select
                 id="smokingStatus"
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                defaultValue={patientData.smokingStatus}
+                value={patientData.smokingStatus}
+                onChange={(e) => handleFieldChange("smokingStatus", e.target.value)}
               >
                 <option value="Never">Never</option>
                 <option value="Former">Former</option>
@@ -37,13 +44,15 @@ export function LifestyleFactors({ patientData, isEditing }: LifestyleFactorsPro
             )}
           </div>
 
+          {/* Alcohol Consumption */}
           <div>
             <Label htmlFor="alcoholConsumption">Alcohol Consumption</Label>
             {isEditing ? (
               <select
                 id="alcoholConsumption"
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                defaultValue={patientData.alcoholConsumption}
+                value={patientData.alcoholConsumption}
+                onChange={(e) => handleFieldChange("alcoholConsumption", e.target.value)}
               >
                 <option value="None">None</option>
                 <option value="Occasional">Occasional</option>

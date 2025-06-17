@@ -6,7 +6,6 @@ import { Users, AlertTriangle, UserCheck, Activity } from "lucide-react"
 interface PatientStatsCardsProps {
   stats: {
     total: number
-    urgent: number
     male: number
     female: number
     averageAge: number
@@ -21,13 +20,6 @@ export function PatientStatsCards({ stats }: PatientStatsCardsProps) {
       icon: Users,
       color: "text-blue-600",
       bgColor: "bg-blue-100",
-    },
-    {
-      title: "Urgent Cases",
-      value: stats.urgent,
-      icon: AlertTriangle,
-      color: "text-red-600",
-      bgColor: "bg-red-100",
     },
     {
       title: "Male Patients",

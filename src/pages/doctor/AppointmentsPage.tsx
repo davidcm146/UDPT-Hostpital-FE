@@ -91,9 +91,9 @@ const DoctorAppointmentsPage = () => {
   // Group filtered appointments by status
   const appointmentsByStatus = useMemo(() => {
     return {
-      pending: filteredAppointments.filter((apt) => apt.status === "pending"),
-      confirmed: filteredAppointments.filter((apt) => apt.status === "confirmed"),
-      declined: filteredAppointments.filter((apt) => apt.status === "cancelled"),
+      pending: filteredAppointments.filter((apt) => apt.status === "PENDING"),
+      confirmed: filteredAppointments.filter((apt) => apt.status === "CONFIRMED"),
+      declined: filteredAppointments.filter((apt) => apt.status === "CANCELLED"),
     }
   }, [filteredAppointments])
 

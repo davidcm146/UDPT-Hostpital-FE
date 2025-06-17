@@ -209,13 +209,8 @@ export const mockDoctorPatients: DoctorPatient[] = [
   },
 ]
 
-// Helper functions for doctor patient management
-export const getPatientsByDoctor = (doctorID: string): DoctorPatient[] => {
-  return mockDoctorPatients.filter((patient) => patient.primaryPhysician?.includes(doctorID) || true)
-}
-
 export const getPatientById = (patientID: string): DoctorPatient | undefined => {
-  return mockDoctorPatients.find((patient) => patient.patientID === patientID)
+  return mockDoctorPatients.find((patient) => patient.userId === patientID)
 }
 
 export const getUrgentPatients = (): DoctorPatient[] => {
@@ -268,15 +263,4 @@ export const markPatientAsUrgent = (patientID: string, isUrgent: boolean): boole
     return true
   }
   return false
-}
-
-// Get patient statistics
-export const getPatientStats = () => {
-  return {
-    total: mockDoctorPatients.length,
-    urgent: mockDoctorPatients.filter((p) => p.isUrgent).length,
-    male: mockDoctorPatients.filter((p) => p.gender === "Male").length,
-    female: mockDoctorPatients.filter((p) => p.gender === "Female").length,
-    averageAge: Math.round(mockDoctorPatients.reduce((sum, p) => sum + p.age, 0) / mockDoctorPatients.length),
-  }
 }

@@ -5,42 +5,21 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Calendar, FileText, Pill, Eye, Plus } from "lucide-react"
 import type { MedicalRecord } from "@/types/medical-record"
+import { getVisitTypeColor } from "@/lib/MedicalRecordUtils"
 
 interface MedicalRecordCardProps {
   record: MedicalRecord
+  prescriptionCount: number
   onViewDetails: (recordID: string) => void
   onAddPrescription: (recordID: string) => void
 }
 
-export function MedicalRecordCard({ record, onViewDetails, onAddPrescription }: MedicalRecordCardProps) {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Active":
-        return "bg-green-100 text-green-800"
-      case "Completed":
-        return "bg-blue-100 text-blue-800"
-      case "Cancelled":
-        return "bg-red-100 text-red-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
-  }
-
-  const getVisitTypeColor = (visitType: string) => {
-    switch (visitType) {
-      case "Emergency":
-        return "bg-red-100 text-red-800"
-      case "Follow-up":
-        return "bg-yellow-100 text-yellow-800"
-      case "Regular Checkup":
-        return "bg-green-100 text-green-800"
-      case "Consultation":
-        return "bg-blue-100 text-blue-800"
-      default:
-        return "bg-gray-100 text-gray-800"
-    }
-  }
-
+export function MedicalRecordCard({
+  record,
+  prescriptionCount,
+  onViewDetails,
+  onAddPrescription,
+}: MedicalRecordCardProps) {
   return (
     <Card className="hover:shadow-md transition-shadow">
       <CardHeader className="pb-3">
@@ -49,15 +28,14 @@ export function MedicalRecordCard({ record, onViewDetails, onAddPrescription }: 
             <CardTitle className="text-lg">{record.diagnosis}</CardTitle>
             <div className="flex items-center space-x-2">
               <Badge className={getVisitTypeColor(record.visitType)}>{record.visitType}</Badge>
-              <Badge className={getStatusColor(record.status)}>{record.status}</Badge>
             </div>
           </div>
           <div className="flex space-x-2">
-            <Button variant="outline" size="sm" onClick={() => onViewDetails(record.recordID)}>
+            <Button variant="outline" size="sm" onClick={() => onViewDetails(record.id)}>
               <Eye className="h-4 w-4 mr-1" />
               View
             </Button>
-            <Button variant="outline" size="sm" onClick={() => onAddPrescription(record.recordID)}>
+            <Button variant="outline" size="sm" onClick={() => onAddPrescription(record.id)}>
               <Plus className="h-4 w-4 mr-1" />
               Prescription
             </Button>
@@ -83,11 +61,11 @@ export function MedicalRecordCard({ record, onViewDetails, onAddPrescription }: 
         <div className="flex items-center justify-between pt-2 border-t">
           <div className="flex items-center text-sm text-gray-500">
             <Pill className="h-4 w-4 mr-1" />
-            <span>{record.prescriptions.length} Prescription(s)</span>
+            <span>{prescriptionCount} Prescription(s)</span>
           </div>
           <div className="flex items-center text-sm text-gray-500">
             <FileText className="h-4 w-4 mr-1" />
-            <span>Record ID: {record.recordID}</span>
+            <span>Record ID: {record.id}</span>
           </div>
         </div>
       </CardContent>

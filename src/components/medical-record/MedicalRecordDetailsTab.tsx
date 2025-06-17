@@ -2,8 +2,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Calendar, User, Stethoscope, ClipboardList, FileText, MapPin, Phone, Mail, Star } from "lucide-react"
+import { Calendar, User, Stethoscope, FileText, MapPin, Phone, Mail, GraduationCap } from "lucide-react"
 import type { MedicalRecord } from "@/types/medical-record"
+import type { Doctor } from "@/types/doctor"
 import { getDoctorById } from "@/data/doctors"
 
 interface MedicalRecordDetailsTabProps {
@@ -11,31 +12,20 @@ interface MedicalRecordDetailsTabProps {
 }
 
 export function MedicalRecordDetailsTab({ medicalRecord }: MedicalRecordDetailsTabProps) {
-  const doctor = getDoctorById(medicalRecord.doctorID)
+  const doctor = getDoctorById(medicalRecord.doctorId) as Doctor | undefined
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "completed":
-        return "bg-green-100 text-green-800"
-      case "active":
-        return "bg-blue-100 text-blue-800"
-      case "cancelled":
+  const getVisitTypeColor = (visitType: MedicalRecord["visitType"]) => {
+    switch (visitType) {
+      case "Emergency":
         return "bg-red-100 text-red-800"
+      case "Follow-up":
+        return "bg-blue-100 text-blue-800"
+      case "Consultation":
+        return "bg-purple-100 text-purple-800"
+      case "Regular Checkup":
+        return "bg-green-100 text-green-800"
       default:
         return "bg-gray-100 text-gray-800"
-    }
-  }
-
-  const getVisitTypeColor = (visitType: string) => {
-    switch (visitType.toLowerCase()) {
-      case "emergency":
-        return "bg-red-100 text-red-800"
-      case "follow-up":
-        return "bg-blue-100 text-blue-800"
-      case "consultation":
-        return "bg-purple-100 text-purple-800"
-      default:
-        return "bg-green-100 text-green-800"
     }
   }
 
@@ -45,6 +35,14 @@ export function MedicalRecordDetailsTab({ medicalRecord }: MedicalRecordDetailsT
       month: "long",
       day: "numeric",
     })
+  }
+
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
   }
 
   return (
@@ -64,23 +62,21 @@ export function MedicalRecordDetailsTab({ medicalRecord }: MedicalRecordDetailsT
               <div className="flex items-center gap-2">
                 <Stethoscope className="h-4 w-4 text-gray-400" />
                 <span className="font-medium">Visit Type:</span>
-                <Badge variant="outline" className={`${getVisitTypeColor(medicalRecord.visitType)}`}>
+                <Badge variant="outline" className={getVisitTypeColor(medicalRecord.visitType)}>
                   {medicalRecord.visitType}
                 </Badge>
               </div>
             </div>
             <div className="space-y-2">
               <div className="flex items-center gap-2">
-                <ClipboardList className="h-4 w-4 text-gray-400" />
-                <span className="font-medium">Status:</span>
-                <Badge variant="outline" className={`${getStatusColor(medicalRecord.status)}`}>
-                  {medicalRecord.status}
-                </Badge>
-              </div>
-              <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-gray-400" />
                 <span className="font-medium">Record ID:</span>
-                <span className="text-sm font-mono">{medicalRecord.recordID}</span>
+                <span className="text-sm font-mono">{medicalRecord.id}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-gray-400" />
+                <span className="font-medium">Created:</span>
+                <span className="text-sm">{formatDate(medicalRecord.createdAt)}</span>
               </div>
             </div>
           </div>
@@ -119,20 +115,15 @@ export function MedicalRecordDetailsTab({ medicalRecord }: MedicalRecordDetailsT
           <CardContent>
             <div className="flex items-start space-x-4">
               <Avatar className="h-16 w-16">
-                <AvatarImage src={doctor.image || "/placeholder.svg"} alt={doctor.name} />
-                <AvatarFallback>
-                  {doctor.firstName[0]}
-                  {doctor.lastName[0]}
-                </AvatarFallback>
+                <AvatarImage src={doctor.avatar || "/placeholder.svg"} alt={doctor.name} />
+                <AvatarFallback className="bg-blue-100 text-blue-600">{getInitials(doctor.name)}</AvatarFallback>
               </Avatar>
               <div className="flex-1 space-y-3">
                 <div>
-                  <h3 className="text-lg font-semibold">{doctor.name}</h3>
+                  <h3 className="text-lg font-semibold">Dr. {doctor.name}</h3>
                   <p className="text-gray-600">{doctor.specialty}</p>
                   <div className="flex items-center gap-1 mt-1">
-                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                    <span className="text-sm font-medium">{doctor.rating}</span>
-                    <span className="text-sm text-gray-500">• {doctor.experience}</span>
+                    <span className="text-sm text-gray-500">Experience: {doctor.experience}</span>
                   </div>
                 </div>
 
@@ -147,64 +138,27 @@ export function MedicalRecordDetailsTab({ medicalRecord }: MedicalRecordDetailsT
                   </div>
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4 text-gray-400" />
-                    <span>{doctor.location}</span>
+                    <span>{doctor.address}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-gray-400" />
-                    <span>Staff ID: {doctor.staffId}</span>
+                    <span>Doctor ID: {doctor.userId}</span>
                   </div>
                 </div>
 
                 <div>
-                  <h5 className="font-medium text-sm mb-2">Education & Certifications</h5>
-                  <p className="text-sm text-gray-600 mb-2">{doctor.education}</p>
-                  <div className="flex flex-wrap gap-1">
-                    {doctor.certifications.slice(0, 2).map((cert, index) => (
-                      <Badge key={index} variant="outline" className="text-xs">
-                        {cert}
-                      </Badge>
-                    ))}
-                    {doctor.certifications.length > 2 && (
-                      <Badge variant="outline" className="text-xs">
-                        +{doctor.certifications.length - 2} more
-                      </Badge>
-                    )}
+                  <div className="flex items-center gap-2 mb-2">
+                    <GraduationCap className="h-4 w-4 text-gray-400" />
+                    <h5 className="font-medium text-sm">Education & Qualifications</h5>
                   </div>
+                  <p className="text-sm text-gray-600">{doctor.education}</p>
                 </div>
 
-                <div>
-                  <h5 className="font-medium text-sm mb-2">Specializations</h5>
-                  <div className="flex flex-wrap gap-1">
-                    {doctor.specializations.map((spec, index) => (
-                      <Badge key={index} variant="secondary" className="text-xs">
-                        {spec}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <h5 className="font-medium text-sm mb-2">Languages</h5>
-                  <p className="text-sm text-gray-600">{doctor.languages.join(", ")}</p>
+                <div className="text-xs text-gray-500">
+                  <p>Joined: {formatDate(doctor.createdAt)}</p>
+                  {doctor.updatedAt !== doctor.createdAt && <p>Last updated: {formatDate(doctor.updatedAt)}</p>}
                 </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {medicalRecord.prescriptions && medicalRecord.prescriptions.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Associated Prescriptions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {medicalRecord.prescriptions.map((prescriptionId, index) => (
-                <Badge key={index} variant="outline" className="font-mono text-xs">
-                  {prescriptionId}
-                </Badge>
-              ))}
             </div>
           </CardContent>
         </Card>

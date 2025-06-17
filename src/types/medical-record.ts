@@ -1,7 +1,7 @@
 export interface MedicalRecord {
-  recordID: string // uuid
-  patientID: string // uuid
-  doctorID: string // uuid
+  id: string // uuid
+  patientId: string // uuid
+  doctorId: string // uuid
   diagnosis: string
   treatment: string
   description: string
@@ -9,8 +9,6 @@ export interface MedicalRecord {
   createdAt: Date
   // Additional simple properties
   visitType: "Regular Checkup" | "Follow-up" | "Emergency" | "Consultation"
-  status: "Active" | "Completed" | "Cancelled"
-  prescriptions: string[] // Array of prescription IDs
 }
 
 export interface CreateMedicalRecordRequest {

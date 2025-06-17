@@ -14,7 +14,7 @@ interface PrescriptionCardProps {
 }
 
 const PrescriptionCard = ({ prescription, onViewDetails }: PrescriptionCardProps) => {
-  const doctor = mockDoctors.find((d) => d.id === prescription.doctorID)
+  const doctor = mockDoctors.find((d) => d.userId === prescription.doctorID)
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -74,7 +74,7 @@ const PrescriptionCard = ({ prescription, onViewDetails }: PrescriptionCardProps
         <div className="space-y-2">
           <h4 className="font-medium text-sm">Medications:</h4>
           {prescription.details.slice(0, 2).map((detail) => (
-            <div key={detail.detailID} className="text-sm text-gray-600">
+            <div key={detail.id} className="text-sm text-gray-600">
               • {detail.medicine.name} - {detail.dosage}
               {detail.medicine.unit} (Qty: {detail.quantity})
             </div>
@@ -89,12 +89,6 @@ const PrescriptionCard = ({ prescription, onViewDetails }: PrescriptionCardProps
             <FileText className="mr-2 h-4 w-4" />
             View Details
           </Button>
-          {prescription.status === "active" && (
-            <Button variant="outline">
-              <RefreshCw className="mr-2 h-4 w-4" />
-              Request Refill
-            </Button>
-          )}
         </div>
       </CardContent>
     </Card>

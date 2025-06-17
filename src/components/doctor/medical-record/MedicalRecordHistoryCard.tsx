@@ -6,12 +6,13 @@ import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Calendar, User, Stethoscope, FileText, Pill, Clock, Phone, Heart, AlertTriangle } from "lucide-react"
 import type { MedicalRecord } from "@/types/medical-record"
-import type { DoctorPatient } from "@/data/doctor-patients"
 import { formatDate } from "@/lib/MedicalRecordUtils"
+import { calculateAge } from "@/lib/PatientUtils"
+import { Patient } from "@/types/patient"
 
 interface MedicalRecordHistoryCardProps {
   record: MedicalRecord
-  patient?: DoctorPatient
+  patient?: Patient
   onViewDetails?: (recordID: string) => void
   onViewPatient?: (patientID: string) => void
   onAddPrescription?: (recordID: string) => void
@@ -24,19 +25,6 @@ export function MedicalRecordHistoryCard({
   onViewPatient,
   onAddPrescription,
 }: MedicalRecordHistoryCardProps) {
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "active":
-        return "bg-green-100 text-green-800 border-green-200"
-      case "completed":
-        return "bg-blue-100 text-blue-800 border-blue-200"
-      case "cancelled":
-        return "bg-red-100 text-red-800 border-red-200"
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200"
-    }
-  }
-
   const getVisitTypeColor = (visitType: string) => {
     switch (visitType.toLowerCase()) {
       case "emergency":
@@ -70,15 +58,15 @@ export function MedicalRecordHistoryCard({
   const IconComponent = getVisitTypeIcon(record.visitType)
 
   const handleViewDetails = () => {
-    onViewDetails?.(record.recordID)
+    onViewDetails?.(record.id)
   }
 
   const handleViewPatient = () => {
-    onViewPatient?.(record.patientID)
+    onViewPatient?.(record.patientId)
   }
 
   const handleAddPrescription = () => {
-    onAddPrescription?.(record.recordID)
+    onAddPrescription?.(record.id)
   }
 
   return (
@@ -107,9 +95,6 @@ export function MedicalRecordHistoryCard({
                 </div>
               </div>
             </div>
-            <Badge variant="outline" className={`${getStatusColor(record.status)}`}>
-              {record.status.charAt(0).toUpperCase() + record.status.slice(1)}
-            </Badge>
           </div>
 
           {/* Patient Information */}
@@ -132,7 +117,7 @@ export function MedicalRecordHistoryCard({
                       <div className="flex items-center">
                         <User className="h-3 w-3 mr-1" />
                         <span>
-                          {patient.age}y, {patient.gender}
+                          {calculateAge(patient.DOB)}y, {patient.gender}
                         </span>
                       </div>
                       <div className="flex items-center">
@@ -146,11 +131,6 @@ export function MedicalRecordHistoryCard({
                     </div>
                   </div>
                 </div>
-                {patient.isUrgent && (
-                  <Badge variant="outline" className="border-red-500 text-red-600 text-xs">
-                    Urgent
-                  </Badge>
-                )}
               </div>
 
               {patient.allergies && patient.allergies !== "No known allergies" && (
@@ -158,7 +138,7 @@ export function MedicalRecordHistoryCard({
                   <div className="flex items-center">
                     <AlertTriangle className="h-3 w-3 text-yellow-600 mr-1" />
                     <span className="text-xs font-medium text-yellow-800">Allergies: </span>
-                    <span className="text-xs text-yellow-700">{patient.allergies}</span>
+                    <span className="text-xs text-yellow-700">&nbsp;{patient.allergies}</span>
                   </div>
                 </div>
               )}
@@ -172,16 +152,6 @@ export function MedicalRecordHistoryCard({
             </div>
           )}
 
-          {/* Prescriptions Info */}
-          {record.prescriptions && record.prescriptions.length > 0 && (
-            <div className="mb-4">
-              <div className="flex items-center text-sm text-gray-600">
-                <Pill className="h-4 w-4 mr-1" />
-                <span>{record.prescriptions.length} prescription(s) associated</span>
-              </div>
-            </div>
-          )}
-
           {/* Action Buttons */}
           <div className="flex space-x-2">
             <Button className="bg-teal-600 hover:bg-teal-700" onClick={handleViewDetails}>
@@ -192,12 +162,6 @@ export function MedicalRecordHistoryCard({
               <User className="mr-2 h-4 w-4" />
               View Patient
             </Button>
-            {record.status === "Active" && (
-              <Button variant="outline" onClick={handleAddPrescription}>
-                <Pill className="mr-2 h-4 w-4" />
-                Add Prescription
-              </Button>
-            )}
           </div>
         </div>
       </CardContent>

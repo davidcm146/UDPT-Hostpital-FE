@@ -122,7 +122,7 @@ export const mockDoctorAppointments: DoctorAppointment[] = [
     patientID: "550e8400-e29b-41d4-a716-446655440992",
     doctorID: "550e8400-e29b-41d4-a716-446655440001",
     status: "confirmed",
-    appointmentDate: new Date("2025-05-28"),
+    appointmentDate: new Date("2025-06-13"),
     appointmentTime: "10:00",
     createdAt: new Date("2025-05-21T15:20:00"),
     patientName: "Lisa Anderson",

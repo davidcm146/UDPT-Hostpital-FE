@@ -3,7 +3,6 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { Calendar, User, Pill, DollarSign, FileText, RefreshCw } from "lucide-react"
 import type { PrescriptionWithDetails } from "@/types/prescription"
@@ -15,10 +14,10 @@ interface PrescriptionDetailsDialogProps {
   prescription: PrescriptionWithDetails | null
 }
 
-const PrescriptionDetailsDialog = ({ open, onOpenChange, prescription }: PrescriptionDetailsDialogProps) => {
+export function PrescriptionDetailsDialog ({ open, onOpenChange, prescription }: PrescriptionDetailsDialogProps) {
   if (!prescription) return null
 
-  const doctor = mockDoctors.find((d) => d.id === prescription.doctorID)
+  const doctor = mockDoctors.find((d) => d.userId === prescription.doctorId)
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -59,7 +58,7 @@ const PrescriptionDetailsDialog = ({ open, onOpenChange, prescription }: Prescri
                   <div className="flex items-center gap-2">
                     <FileText className="h-4 w-4 text-gray-400" />
                     <span className="font-medium">Prescription ID:</span>
-                    <span>{prescription.prescriptionID}</span>
+                    <span>{prescription.id}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-gray-400" />
@@ -76,7 +75,7 @@ const PrescriptionDetailsDialog = ({ open, onOpenChange, prescription }: Prescri
                   <div className="flex items-center gap-2">
                     <Pill className="h-4 w-4 text-gray-400" />
                     <span className="font-medium">Total Medications:</span>
-                    <span>{prescription.details.length}</span>
+                    <span>{prescription.details?.length}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <DollarSign className="h-4 w-4 text-gray-400" />
@@ -95,8 +94,8 @@ const PrescriptionDetailsDialog = ({ open, onOpenChange, prescription }: Prescri
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {prescription.details.map((detail, index) => (
-                  <div key={detail.detailID}>
+                {prescription.details?.map((detail, index) => (
+                  <div key={detail.id}>
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
                         <h4 className="font-medium text-teal-700">{detail.medicine.name}</h4>
@@ -136,26 +135,14 @@ const PrescriptionDetailsDialog = ({ open, onOpenChange, prescription }: Prescri
                       </div>
                     </div>
 
-                    {index < prescription.details.length - 1 && <Separator className="mt-4" />}
+                    {index < prescription.details?.length - 1 && <Separator className="mt-4" />}
                   </div>
                 ))}
               </div>
             </CardContent>
           </Card>
-
-          {/* Actions */}
-          <div className="flex justify-end space-x-2">
-            {prescription.status === "active" && (
-              <Button className="bg-teal-600 hover:bg-teal-700">
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Request Refill
-              </Button>
-            )}
-          </div>
         </div>
       </DialogContent>
     </Dialog>
   )
 }
-
-export default PrescriptionDetailsDialog

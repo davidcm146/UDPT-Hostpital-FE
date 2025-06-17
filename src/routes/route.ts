@@ -16,7 +16,7 @@ import ReceptionistDashboardPage from "@/pages/receptionist/DashboardPage";
 import ReceptionistPatientsPage from "@/pages/receptionist/PatientsPage";
 import ReceptionistAppointmentsPage from "@/pages/receptionist/AppointmentsPage";
 import ReceptionistMedicinesPage from "@/pages/receptionist/MedicinesPage";
-import MedicalRecordSchedulePage from "@/pages/MedicalRecordSchedulePage";
+import MedicalRecordSchedulePage from "@/pages/MedicalRecordPage";
 import DoctorMedicalRecordHistoryPage from "@/pages/doctor/MedicalRecordHistoryPage";
 import ReceptionistProfilePage from "@/pages/receptionist/ProfilePage";
 import AdminLayout from "@/layouts/AdminLayout";
@@ -24,6 +24,7 @@ import AdminDashboardPage from "@/pages/admin/AdminDashboard";
 import PatientManagementPage from "@/pages/admin/PatientManagementPage";
 import PatientStatisticsPage from "@/pages/admin/PatientStatisticsPage";
 import PrescriptionStatisticsPage from "@/pages/admin/PrescriptionStatisticsPage";
+import AppointmentsPage from "@/pages/AppointmentsPage";
 
 export const router = createBrowserRouter([
   {
@@ -35,8 +36,9 @@ export const router = createBrowserRouter([
       { path: "login", Component: LoginPage },
       { path: "register", Component: RegisterPage },
       { path: "find-doctor", Component: DoctorsPage },
-      { path: "medical-schedule", Component: MedicalRecordSchedulePage},
+      { path: "medical-record", Component: MedicalRecordSchedulePage},
       { path: "profile", Component: ProfilePage },
+      { path: "appointments", Component: AppointmentsPage }
     ],
   },
   {

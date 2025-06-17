@@ -1,10 +1,11 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
-import { User, BadgeIcon as IdCard, Mail, Phone, MapPin, Stethoscope } from "lucide-react"
+import { User, Mail, Phone, MapPin, Stethoscope, GraduationCap } from "lucide-react"
 import type { Doctor } from "@/types/doctor"
 
 interface PersonalInfoTabProps {
@@ -14,18 +15,22 @@ interface PersonalInfoTabProps {
 }
 
 const PersonalInfoTab = ({ doctorData, isEditing, onSave }: PersonalInfoTabProps) => {
+  const [formData, setFormData] = useState<Partial<Doctor>>({})
+
+  // Cập nhật formData khi doctorData thay đổi
+  useEffect(() => {
+    setFormData(doctorData)
+  }, [doctorData])
+
+  const handleChange = (field: keyof Doctor, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      [field]: value,
+    }))
+  }
+
   const handleSave = () => {
-    // In a real app, collect form data and call onSave
-    onSave?.({
-      firstName: doctorData.firstName,
-      lastName: doctorData.lastName,
-      specialty: doctorData.specialty,
-      email: doctorData.email,
-      phone: doctorData.phone,
-      address: doctorData.address,
-      licenseNumber: doctorData.licenseNumber,
-      npiNumber: doctorData.npiNumber,
-    })
+    onSave?.(formData)
   }
 
   return (
@@ -38,25 +43,17 @@ const PersonalInfoTab = ({ doctorData, isEditing, onSave }: PersonalInfoTabProps
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-4">
             <div>
-              <Label htmlFor="firstName">First Name</Label>
+              <Label htmlFor="name">Full Name</Label>
               {isEditing ? (
-                <Input id="firstName" defaultValue={doctorData.firstName} />
+                <Input
+                  id="name"
+                  value={formData.name || ""}
+                  onChange={(e) => handleChange("name", e.target.value)}
+                />
               ) : (
                 <div className="flex items-center mt-1">
                   <User className="h-4 w-4 text-gray-400 mr-2" />
-                  <span>{doctorData.firstName}</span>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="lastName">Last Name</Label>
-              {isEditing ? (
-                <Input id="lastName" defaultValue={doctorData.lastName} />
-              ) : (
-                <div className="flex items-center mt-1">
-                  <User className="h-4 w-4 text-gray-400 mr-2" />
-                  <span>{doctorData.lastName}</span>
+                  <span>{doctorData.name}</span>
                 </div>
               )}
             </div>
@@ -64,7 +61,11 @@ const PersonalInfoTab = ({ doctorData, isEditing, onSave }: PersonalInfoTabProps
             <div>
               <Label htmlFor="specialty">Specialty</Label>
               {isEditing ? (
-                <Input id="specialty" defaultValue={doctorData.specialty} />
+                <Input
+                  id="specialty"
+                  value={formData.specialty || ""}
+                  onChange={(e) => handleChange("specialty", e.target.value)}
+                />
               ) : (
                 <div className="flex items-center mt-1">
                   <Stethoscope className="h-4 w-4 text-gray-400 mr-2" />
@@ -74,13 +75,33 @@ const PersonalInfoTab = ({ doctorData, isEditing, onSave }: PersonalInfoTabProps
             </div>
 
             <div>
-              <Label htmlFor="licenseNumber">License Number</Label>
+              <Label htmlFor="education">Education</Label>
               {isEditing ? (
-                <Input id="licenseNumber" defaultValue={doctorData.licenseNumber} />
+                <Input
+                  id="education"
+                  value={formData.education || ""}
+                  onChange={(e) => handleChange("education", e.target.value)}
+                />
               ) : (
                 <div className="flex items-center mt-1">
-                  <IdCard className="h-4 w-4 text-gray-400 mr-2" />
-                  <span>{doctorData.licenseNumber}</span>
+                  <GraduationCap className="h-4 w-4 text-gray-400 mr-2" />
+                  <span>{doctorData.education}</span>
+                </div>
+              )}
+            </div>
+
+            <div>
+              <Label htmlFor="experience">Experience</Label>
+              {isEditing ? (
+                <Input
+                  id="experience"
+                  value={formData.experience || ""}
+                  onChange={(e) => handleChange("experience", e.target.value)}
+                />
+              ) : (
+                <div className="flex items-center mt-1">
+                  <User className="h-4 w-4 text-gray-400 mr-2" />
+                  <span>{doctorData.experience}</span>
                 </div>
               )}
             </div>
@@ -90,7 +111,12 @@ const PersonalInfoTab = ({ doctorData, isEditing, onSave }: PersonalInfoTabProps
             <div>
               <Label htmlFor="email">Email Address</Label>
               {isEditing ? (
-                <Input id="email" type="email" defaultValue={doctorData.email} />
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email || ""}
+                  onChange={(e) => handleChange("email", e.target.value)}
+                />
               ) : (
                 <div className="flex items-center mt-1">
                   <Mail className="h-4 w-4 text-gray-400 mr-2" />
@@ -102,7 +128,11 @@ const PersonalInfoTab = ({ doctorData, isEditing, onSave }: PersonalInfoTabProps
             <div>
               <Label htmlFor="phone">Phone Number</Label>
               {isEditing ? (
-                <Input id="phone" defaultValue={doctorData.phone} />
+                <Input
+                  id="phone"
+                  value={formData.phone || ""}
+                  onChange={(e) => handleChange("phone", e.target.value)}
+                />
               ) : (
                 <div className="flex items-center mt-1">
                   <Phone className="h-4 w-4 text-gray-400 mr-2" />
@@ -114,23 +144,15 @@ const PersonalInfoTab = ({ doctorData, isEditing, onSave }: PersonalInfoTabProps
             <div>
               <Label htmlFor="address">Office Address</Label>
               {isEditing ? (
-                <Input id="address" defaultValue={doctorData.address} />
+                <Input
+                  id="address"
+                  value={formData.address || ""}
+                  onChange={(e) => handleChange("address", e.target.value)}
+                />
               ) : (
                 <div className="flex items-center mt-1">
                   <MapPin className="h-4 w-4 text-gray-400 mr-2" />
                   <span>{doctorData.address}</span>
-                </div>
-              )}
-            </div>
-
-            <div>
-              <Label htmlFor="npiNumber">NPI Number</Label>
-              {isEditing ? (
-                <Input id="npiNumber" defaultValue={doctorData.npiNumber} />
-              ) : (
-                <div className="flex items-center mt-1">
-                  <IdCard className="h-4 w-4 text-gray-400 mr-2" />
-                  <span>{doctorData.npiNumber}</span>
                 </div>
               )}
             </div>

@@ -9,12 +9,14 @@ import { PatientListHeader } from "@/components/doctor/patients/PatientListHeade
 import { PatientCard } from "@/components/doctor/patients/PatientCard"
 import { PatientFilters } from "@/components/doctor/patients/PatientFilters"
 import { PatientStatsCards } from "@/components/doctor/patients/PatientStatsCard"
-import { mockDoctorPatients, getPatientStats, searchPatients, getPatientPrescriptions } from "@/data/doctor-patients"
-import type { DoctorPatient } from "@/data/doctor-patients"
+import { getPrescriptionsByPatient } from "@/data/prescription"
 import { PatientMedicalRecordDialog } from "@/components/doctor/patients/PatientMedicalRecordDialog"
+import { calculateAge } from "@/lib/PatientUtils"
+import { Patient } from "@/types/patient"
+import { mockPatients, searchPatients, getPatientStats } from "@/data/patient"
 
 const DoctorPatientsPage = () => {
-  const [patients, setPatients] = useState<DoctorPatient[]>(mockDoctorPatients)
+  const [patients, setPatients] = useState<Patient[]>(mockPatients)
   const [searchQuery, setSearchQuery] = useState("")
   const [filters, setFilters] = useState({
     showUrgentOnly: false,
@@ -24,7 +26,7 @@ const DoctorPatientsPage = () => {
     bloodTypeFilter: [] as string[],
   })
 
-  const [selectedPatient, setSelectedPatient] = useState<DoctorPatient | null>(null)
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
   const [medicalRecordDialogOpen, setMedicalRecordDialogOpen] = useState(false)
 
   // Get patient statistics
@@ -39,11 +41,6 @@ const DoctorPatientsPage = () => {
       result = searchPatients(searchQuery)
     }
 
-    // Apply urgent filter
-    if (filters.showUrgentOnly) {
-      result = result.filter((patient) => patient.isUrgent)
-    }
-
     // Apply gender filter
     if (filters.genderFilter.length > 0) {
       result = result.filter((patient) => filters.genderFilter.includes(patient.gender))
@@ -52,7 +49,7 @@ const DoctorPatientsPage = () => {
     // Apply age range filter
     if (filters.ageRange !== "all") {
       result = result.filter((patient) => {
-        const age = patient.age
+        const age = calculateAge(patient.DOB)
         switch (filters.ageRange) {
           case "0-18":
             return age >= 0 && age <= 18
@@ -73,19 +70,6 @@ const DoctorPatientsPage = () => {
       result = result.filter((patient) => filters.bloodTypeFilter.includes(patient.bloodType))
     }
 
-    // Apply condition filter
-    if (filters.conditionFilter.length > 0) {
-      result = result.filter((patient) =>
-        patient.chronicConditions
-          ?.split(", ")
-          .some((condition) =>
-            filters.conditionFilter.some((filterCondition) =>
-              condition.toLowerCase().includes(filterCondition.toLowerCase()),
-            ),
-          ),
-      )
-    }
-
     return result
   }, [patients, searchQuery, filters])
 
@@ -102,8 +86,7 @@ const DoctorPatientsPage = () => {
 
   // Patient action handlers
   const handleViewRecords = (patientID: string) => {
-    console.log("Viewing records for patient:", patientID)
-    const patient = mockDoctorPatients.find((p) => p.patientID === patientID)
+    const patient = mockPatients.find((p) => p.userId === patientID)
     if (patient) {
       setSelectedPatient(patient)
       setMedicalRecordDialogOpen(true)
@@ -112,7 +95,7 @@ const DoctorPatientsPage = () => {
 
   const handleViewPrescriptions = (patientID: string) => {
     console.log("Viewing prescriptions for patient:", patientID)
-    const prescriptions = getPatientPrescriptions(patientID)
+    const prescriptions = getPrescriptionsByPatient(patientID)
     console.log("Prescriptions:", prescriptions)
     // In a real app, open prescriptions dialog or navigate to prescriptions page
     alert(`Found ${prescriptions.length} prescriptions for patient ${patientID}`)
@@ -132,7 +115,7 @@ const DoctorPatientsPage = () => {
 
   const handleRefreshData = () => {
     console.log("Refreshing patient data...")
-    setPatients([...mockDoctorPatients])
+    setPatients([...mockPatients])
     alert("Patient data refreshed")
   }
 
@@ -151,7 +134,7 @@ const DoctorPatientsPage = () => {
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-8">
         <div className="space-y-6">
-          <PatientListHeader patientCount={patients.length} urgentCount={patients.filter((p) => p.isUrgent).length} />
+          <PatientListHeader patientCount={patients.length} />
 
           <PatientStatsCards stats={patientStats} />
 
@@ -187,7 +170,7 @@ const DoctorPatientsPage = () => {
             {filteredPatients.length > 0 ? (
               filteredPatients.map((patient) => (
                 <PatientCard
-                  key={patient.patientID}
+                  key={patient.userId}
                   patient={patient}
                   onViewRecords={handleViewRecords}
                   onViewPrescriptions={handleViewPrescriptions}

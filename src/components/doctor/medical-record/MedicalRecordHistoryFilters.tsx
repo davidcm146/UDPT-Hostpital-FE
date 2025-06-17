@@ -44,12 +44,6 @@ export function MedicalRecordHistoryFilters({ filters, setFilters, onReset }: Me
   const [diagnosisValue, setDiagnosisValue] = useState(filters.diagnosis)
   const [dateOpen, setDateOpen] = useState(false)
 
-  const statusOptions = [
-    { value: "Active", label: "Active" },
-    { value: "Completed", label: "Completed" },
-    { value: "Cancelled", label: "Cancelled" },
-  ]
-
   const visitTypeOptions = [
     { value: "Regular Checkup", label: "Regular Checkup" },
     { value: "Follow-up", label: "Follow-up" },
@@ -59,7 +53,6 @@ export function MedicalRecordHistoryFilters({ filters, setFilters, onReset }: Me
 
   // Count active filters
   const activeFilterCount =
-    (filters.status.length > 0 ? 1 : 0) +
     (filters.visitType.length > 0 ? 1 : 0) +
     (filters.dateRange.from || filters.dateRange.to ? 1 : 0) +
     (filters.search ? 1 : 0) +
@@ -224,57 +217,6 @@ export function MedicalRecordHistoryFilters({ filters, setFilters, onReset }: Me
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {/* Status Filter */}
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button variant="outline" className="border-dashed">
-              Status
-              {filters.status.length > 0 && (
-                <Badge variant="secondary" className="ml-2 rounded-sm px-1">
-                  {filters.status.length}
-                </Badge>
-              )}
-              <ChevronDown className="ml-2 h-4 w-4" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-60 p-0" align="start">
-            <Command>
-              <CommandInput placeholder="Filter status..." />
-              <CommandList>
-                <CommandEmpty>No results found.</CommandEmpty>
-                <CommandGroup>
-                  {statusOptions.map((option) => {
-                    const isSelected = filters.status.includes(option.value)
-                    return (
-                      <CommandItem key={option.value} onSelect={() => toggleStatus(option.value)}>
-                        <div
-                          className={cn(
-                            "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
-                            isSelected ? "bg-primary text-primary-foreground" : "opacity-50 [&_svg]:invisible",
-                          )}
-                        >
-                          <Check className="h-3 w-3" />
-                        </div>
-                        <span>{option.label}</span>
-                      </CommandItem>
-                    )
-                  })}
-                </CommandGroup>
-                {filters.status.length > 0 && (
-                  <>
-                    <CommandSeparator />
-                    <CommandGroup>
-                      <CommandItem onSelect={() => clearFilter("status")} className="justify-center text-center">
-                        Clear filters
-                      </CommandItem>
-                    </CommandGroup>
-                  </>
-                )}
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
-
         {/* Visit Type Filter */}
         <Popover>
           <PopoverTrigger asChild>
@@ -397,12 +339,6 @@ export function MedicalRecordHistoryFilters({ filters, setFilters, onReset }: Me
               <Badge variant="secondary" className="flex items-center gap-1">
                 Diagnosis: "{filters.diagnosis}"
                 <X className="h-3 w-3 cursor-pointer" onClick={() => clearFilter("diagnosis")} />
-              </Badge>
-            )}
-            {filters.status.length > 0 && (
-              <Badge variant="secondary" className="flex items-center gap-1">
-                Status: {filters.status.length}
-                <X className="h-3 w-3 cursor-pointer" onClick={() => clearFilter("status")} />
               </Badge>
             )}
             {filters.visitType.length > 0 && (

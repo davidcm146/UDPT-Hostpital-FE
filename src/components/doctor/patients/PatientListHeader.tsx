@@ -5,10 +5,9 @@ import { UserPlus } from "lucide-react"
 
 interface PatientListHeaderProps {
   patientCount?: number
-  urgentCount?: number
 }
 
-export function PatientListHeader({ patientCount = 0, urgentCount = 0 }: PatientListHeaderProps) {
+export function PatientListHeader({ patientCount = 0 }: PatientListHeaderProps) {
   return (
     <div className="flex flex-col md:flex-row md:items-center md:justify-between">
       <div>
@@ -18,7 +17,6 @@ export function PatientListHeader({ patientCount = 0, urgentCount = 0 }: Patient
           {patientCount > 0 && (
             <span className="ml-2">
               • {patientCount} total patients
-              {urgentCount > 0 && <span className="text-red-600"> • {urgentCount} urgent</span>}
             </span>
           )}
         </p>

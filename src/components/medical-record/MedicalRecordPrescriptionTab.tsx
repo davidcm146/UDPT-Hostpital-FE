@@ -1,31 +1,21 @@
+"use client"
+
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { FileText, Pill, RefreshCw } from "lucide-react"
-import type { MedicalRecord } from "@/types/medical-record"
-import { getPrescriptionsByPatient } from "@/data/prescription"
-import PrescriptionDetailsDialog from "@/components/prescription/PrescriptionDetailsDialog"
+import { FileText, Pill } from "lucide-react"
+import { PrescriptionDetailsDialog } from "../prescription/PrescriptionDetailsDialog"
 import type { PrescriptionWithDetails } from "@/types/prescription"
 
 interface MedicalRecordPrescriptionTabProps {
-  medicalRecord: MedicalRecord
+  prescriptions: PrescriptionWithDetails[]
 }
 
-export function MedicalRecordPrescriptionTab({ medicalRecord }: MedicalRecordPrescriptionTabProps) {
+export function MedicalRecordPrescriptionTab({ prescriptions }: MedicalRecordPrescriptionTabProps) {
   const [selectedPrescription, setSelectedPrescription] = useState<PrescriptionWithDetails | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
-
-  // Get prescriptions for this patient
-  const prescriptions = getPrescriptionsByPatient(medicalRecord.patientID)
-
-  // Find prescriptions related to this medical record
-  const relatedPrescriptions = prescriptions.filter(
-    (p) =>
-      medicalRecord.prescriptions?.includes(p.prescriptionID) ||
-      new Date(p.createdAt).toDateString() === new Date(medicalRecord.visitDate).toDateString(),
-  )
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -47,7 +37,7 @@ export function MedicalRecordPrescriptionTab({ medicalRecord }: MedicalRecordPre
     setDialogOpen(true)
   }
 
-  if (relatedPrescriptions.length === 0) {
+  if (prescriptions.length === 0) {
     return (
       <Card>
         <CardHeader>
@@ -72,15 +62,15 @@ export function MedicalRecordPrescriptionTab({ medicalRecord }: MedicalRecordPre
     <>
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Prescriptions ({relatedPrescriptions.length})</CardTitle>
+          <CardTitle className="text-lg">Prescriptions ({prescriptions.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
-            {relatedPrescriptions.map((prescription) => (
-              <div key={prescription.prescriptionID} className="border rounded-lg p-4">
+            {prescriptions.map((prescription) => (
+              <div key={prescription.id} className="border rounded-lg p-4">
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h4 className="font-medium">Prescription ID: {prescription.prescriptionID}</h4>
+                    <h4 className="font-medium">Prescription ID: {prescription.id}</h4>
                     <p className="text-sm text-gray-500">
                       Issued: {new Date(prescription.createdAt).toLocaleDateString()}
                     </p>
@@ -91,10 +81,10 @@ export function MedicalRecordPrescriptionTab({ medicalRecord }: MedicalRecordPre
                 </div>
 
                 <div>
-                  <h5 className="font-medium mb-3">Medications ({prescription.details.length})</h5>
+                  <h5 className="font-medium mb-3">Medications ({prescription.details?.length})</h5>
                   <div className="space-y-3">
-                    {prescription.details.slice(0, 2).map((detail) => (
-                      <div key={detail.detailID} className="flex justify-between items-start p-3 bg-gray-50 rounded-lg">
+                    {prescription.details?.slice(0, 2).map((detail) => (
+                      <div key={detail.id} className="flex justify-between items-start p-3 bg-gray-50 rounded-lg">
                         <div className="flex-1">
                           <h6 className="font-medium text-teal-700">{detail.medicine.name}</h6>
                           <p className="text-sm text-gray-600 mb-1">{detail.medicine.description}</p>
@@ -120,13 +110,15 @@ export function MedicalRecordPrescriptionTab({ medicalRecord }: MedicalRecordPre
                           )}
                         </div>
                         <div className="text-right ml-4">
-                          <p className="font-semibold">${detail.subTotal.toFixed(2)}</p>
+                          <p className="font-semibold">
+                            ${Number(detail.subTotal || 0).toFixed(2)}
+                          </p>
                         </div>
                       </div>
                     ))}
-                    {prescription.details.length > 2 && (
+                    {prescription.details?.length > 2 && (
                       <p className="text-sm text-gray-500 text-center">
-                        +{prescription.details.length - 2} more medications
+                        +{prescription.details?.length - 2} more medications
                       </p>
                     )}
                   </div>
@@ -143,12 +135,6 @@ export function MedicalRecordPrescriptionTab({ medicalRecord }: MedicalRecordPre
                       <FileText className="mr-2 h-4 w-4" />
                       View Details
                     </Button>
-                    {prescription.status === "active" && (
-                      <Button className="bg-teal-600 hover:bg-teal-700">
-                        <RefreshCw className="mr-2 h-4 w-4" />
-                        Request Refill
-                      </Button>
-                    )}
                   </div>
                 </div>
               </div>

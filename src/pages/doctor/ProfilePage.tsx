@@ -11,9 +11,9 @@ const DoctorProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false)
 
   // Mock current doctor ID - in real app this would come from authentication
-  const currentDoctorID = "550e8400-e29b-41d4-a716-446655440001"
+  const currentDoctorID = "550e8400-e29b-41d4-a716-446655440002"
   const [doctorData, setDoctorData] = useState<Doctor>(
-    mockDoctors.find((doctor) => doctor.id === currentDoctorID) || mockDoctors[0],
+    mockDoctors.find((doctor) => doctor.userId === currentDoctorID) || mockDoctors[0],
   )
 
   const handleSave = (updatedData: Partial<Doctor>) => {
@@ -23,11 +23,11 @@ const DoctorProfilePage = () => {
     console.log("Saving doctor profile:", updatedData)
   }
 
-  const handleScheduleSave = (updatedSchedule: Partial<Schedule>) => {
-    setIsEditing(false)
-    // In a real app, you would save schedule to backend here
-    console.log("Saving doctor schedule:", updatedSchedule)
-  }
+  // const handleScheduleSave = (updatedSchedule: Partial<Schedule[]>) => {
+  //   setIsEditing(false)
+  //   // In a real app, you would save schedule to backend here
+  //   console.log("Saving doctor schedule:", updatedSchedule)
+  // }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -60,7 +60,7 @@ const DoctorProfilePage = () => {
               doctorData={doctorData}
               isEditing={isEditing}
               onSave={handleSave}
-              onScheduleSave={handleScheduleSave}
+              // onScheduleSave={handleScheduleSave}
             />
           </div>
         </div>

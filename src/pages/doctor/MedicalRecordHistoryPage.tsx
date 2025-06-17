@@ -9,8 +9,7 @@ import {
   MedicalRecordHistoryFilters,
   type MedicalRecordFilterState,
 } from "@/components/doctor/medical-record/MedicalRecordHistoryFilters"
-import { MedicalRecordDetailsDialog } from "@/components/medical-record/MedicalRecordDetailsDialog"
-import { PatientMedicalRecordDialog } from "@/components/doctor/patients/PatientMedicalRecordDialog"
+import { PatientDetailsDialog } from "@/components/doctor/medical-record/PatientDetailsDialog"
 import { CreateMedicalRecordDialog } from "@/components/doctor/medical-record/CreateMedicalRecordDialog"
 import { CreatePrescriptionDialog } from "@/components/doctor/prescriptions/CreatePrescriptionDialog"
 import {
@@ -18,17 +17,20 @@ import {
   getDoctorMedicalRecordStats,
   searchMedicalRecords,
   filterMedicalRecordsByDateRange,
+  getMedicalRecordById,
 } from "@/data/medical-record"
-import { getPatientById } from "@/data/doctor-patients"
+import { getPatientById } from "@/data/patient"
 import type { MedicalRecord } from "@/types/medical-record"
 import type { DoctorPatient } from "@/data/doctor-patients"
+import { MedicalRecordDetailsDialog } from "@/components/doctor/medical-record/MedicalRecordDetailsDialog"
 
-const DoctorMedicalRecordHistoryPage = () => {
+const MedicalRecordHistoryPage = () => {
   // For demo purposes, using a fixed doctor ID
   const currentDoctorID = "550e8400-e29b-41d4-a716-446655440001"
 
   const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null)
   const [selectedPatient, setSelectedPatient] = useState<DoctorPatient | null>(null)
+  const [selectedRecordForPatient, setSelectedRecordForPatient] = useState<MedicalRecord | null>(null)
   const [recordDetailsOpen, setRecordDetailsOpen] = useState(false)
   const [patientDialogOpen, setPatientDialogOpen] = useState(false)
   const [createRecordOpen, setCreateRecordOpen] = useState(false)
@@ -66,7 +68,7 @@ const DoctorMedicalRecordHistoryPage = () => {
     // Apply patient name filter
     if (filters.patientName) {
       result = result.filter((record) => {
-        const patient = getPatientById(record.patientID)
+        const patient = getPatientById(record.patientId)
         return patient?.name.toLowerCase().includes(filters.patientName.toLowerCase())
       })
     }
@@ -74,11 +76,6 @@ const DoctorMedicalRecordHistoryPage = () => {
     // Apply diagnosis filter
     if (filters.diagnosis) {
       result = result.filter((record) => record.diagnosis.toLowerCase().includes(filters.diagnosis.toLowerCase()))
-    }
-
-    // Apply status filter
-    if (filters.status.length > 0) {
-      result = result.filter((record) => filters.status.includes(record.status))
     }
 
     // Apply visit type filter
@@ -125,17 +122,23 @@ const DoctorMedicalRecordHistoryPage = () => {
 
   // Event handlers
   const handleViewRecordDetails = (recordID: string) => {
-    const record = allDoctorRecords.find((r) => r.recordID === recordID)
+    const record = getMedicalRecordById(recordID)
     if (record) {
       setSelectedRecord(record)
       setRecordDetailsOpen(true)
     }
   }
 
-  const handleViewPatient = (patientID: string) => {
+  const handleViewPatient = (patientID: string, recordID?: string) => {
     const patient = getPatientById(patientID)
+    const record = recordID ? getMedicalRecordById(recordID) : null
+
+    console.log("Opening patient dialog for:", patient)
+    console.log("With medical record:", record)
+
     if (patient) {
       setSelectedPatient(patient)
+      setSelectedRecordForPatient(record ?? null)
       setPatientDialogOpen(true)
     }
   }
@@ -168,9 +171,9 @@ const DoctorMedicalRecordHistoryPage = () => {
           {/* Header */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900">Medical Record History</h1>
+              <h1 className="text-3xl font-bold text-gray-900">Medical Records & Prescriptions</h1>
               <p className="text-gray-600">
-                View and manage all medical records you've created
+                Manage medical records and prescriptions for your patients
                 {filteredRecords.length > 0 && <span className="ml-2">• {filteredRecords.length} records found</span>}
               </p>
             </div>
@@ -190,6 +193,54 @@ const DoctorMedicalRecordHistoryPage = () => {
             </div>
           </div>
 
+          {/* Statistics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total Records</p>
+                    <p className="text-2xl font-bold text-gray-900">{doctorStats.totalRecords}</p>
+                  </div>
+                  <FileText className="h-8 w-8 text-teal-600" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Total Patients</p>
+                    <p className="text-2xl font-bold text-gray-900">{doctorStats.totalPatients}</p>
+                  </div>
+                  <FileText className="h-8 w-8 text-blue-600" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">This Month</p>
+                    <p className="text-2xl font-bold text-gray-900">{doctorStats.thisMonthRecords}</p>
+                  </div>
+                  <FileText className="h-8 w-8 text-green-600" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600">Emergency</p>
+                    <p className="text-2xl font-bold text-gray-900">{doctorStats.emergencyRecords}</p>
+                  </div>
+                  <FileText className="h-8 w-8 text-red-600" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           {/* Filters */}
           <div className="mb-6">
             <MedicalRecordHistoryFilters filters={filters} setFilters={setFilters} onReset={resetFilters} />
@@ -199,14 +250,14 @@ const DoctorMedicalRecordHistoryPage = () => {
           <div className="space-y-4">
             {filteredRecords.length > 0 ? (
               filteredRecords.map((record) => {
-                const patient = getPatientById(record.patientID)
+                const patient = getPatientById(record.patientId)
                 return (
                   <MedicalRecordHistoryCard
-                    key={record.recordID}
+                    key={record.id}
                     record={record}
                     patient={patient}
                     onViewDetails={handleViewRecordDetails}
-                    onViewPatient={handleViewPatient}
+                    onViewPatient={(patientID) => handleViewPatient(patientID, record.id)}
                     onAddPrescription={handleAddPrescription}
                   />
                 )
@@ -245,14 +296,15 @@ const DoctorMedicalRecordHistoryPage = () => {
         <MedicalRecordDetailsDialog
           open={recordDetailsOpen}
           onOpenChange={setRecordDetailsOpen}
-          recordId={selectedRecord?.recordID || null}
-          medicalRecords={allDoctorRecords}
+          record={selectedRecord}
+          patient={selectedRecord ? getPatientById(selectedRecord.patientId) ?? null : null}
         />
 
-        <PatientMedicalRecordDialog
+        <PatientDetailsDialog
           open={patientDialogOpen}
           onOpenChange={setPatientDialogOpen}
           patient={selectedPatient}
+          record={selectedRecordForPatient}
         />
 
         <CreateMedicalRecordDialog
@@ -276,4 +328,4 @@ const DoctorMedicalRecordHistoryPage = () => {
   )
 }
 
-export default DoctorMedicalRecordHistoryPage
+export default MedicalRecordHistoryPage

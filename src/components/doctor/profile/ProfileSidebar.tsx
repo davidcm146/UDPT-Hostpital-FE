@@ -2,7 +2,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { BadgeIcon as IdCard, Camera, Stethoscope, Calendar, Clock, UserCheck } from "lucide-react"
+import { BadgeIcon as Camera, Stethoscope, Clock, UserCheck } from "lucide-react"
+import { BookOpen } from "lucide-react"
 import type { Doctor } from "@/types/doctor"
 
 interface ProfileSidebarProps {
@@ -17,10 +18,12 @@ const ProfileSidebar = ({ doctorData, isEditing }: ProfileSidebarProps) => {
         <div className="flex flex-col items-center">
           <div className="relative mb-4">
             <Avatar className="h-24 w-24">
-              <AvatarImage src={doctorData.image || "/placeholder.svg"} alt={doctorData.name} />
+              <AvatarImage src={doctorData.avatar || "/placeholder.svg"} alt={doctorData.name} />
               <AvatarFallback className="text-2xl">
-                {doctorData.firstName[0]}
-                {doctorData.lastName[0]}
+                {doctorData.name
+                .split(" ")
+                .map((n) => n[0])
+                .join("")}
               </AvatarFallback>
             </Avatar>
             {isEditing && (
@@ -34,37 +37,17 @@ const ProfileSidebar = ({ doctorData, isEditing }: ProfileSidebarProps) => {
           </div>
           <h2 className="text-xl font-bold text-gray-900">{doctorData.name}</h2>
           <p className="text-gray-500 text-sm">{doctorData.specialty}</p>
-          <p className="text-gray-500 text-sm mt-1">Staff ID: {doctorData.staffId}</p>
-          {doctorData.rating && (
-            <div className="flex items-center mt-2">
-              <span className="text-yellow-400">★</span>
-              <span className="text-sm text-gray-600 ml-1">{doctorData.rating} rating</span>
-            </div>
-          )}
+          <p className="text-gray-500 text-sm mt-1">Staff ID: {doctorData.userId}</p>
         </div>
 
         <Separator className="my-6" />
 
         <div className="space-y-4">
-          <div className="flex items-center">
-            <IdCard className="h-4 w-4 text-gray-400 mr-3" />
+           <div className="flex items-center">
+            <BookOpen className="h-4 w-4 text-gray-400 mr-3" />
             <div>
-              <p className="text-sm font-medium text-gray-500">License Number</p>
-              <p className="text-sm">{doctorData.licenseNumber}</p>
-            </div>
-          </div>
-          <div className="flex items-center">
-            <Stethoscope className="h-4 w-4 text-gray-400 mr-3" />
-            <div>
-              <p className="text-sm font-medium text-gray-500">NPI Number</p>
-              <p className="text-sm">{doctorData.npiNumber}</p>
-            </div>
-          </div>
-          <div className="flex items-center">
-            <Calendar className="h-4 w-4 text-gray-400 mr-3" />
-            <div>
-              <p className="text-sm font-medium text-gray-500">Next Appointment</p>
-              <p className="text-sm">{doctorData.nextAppointment || "No upcoming appointments"}</p>
+              <p className="text-sm font-medium text-gray-500">Education</p>
+              <p className="text-sm">{doctorData.education}</p>
             </div>
           </div>
           <div className="flex items-center">

@@ -13,6 +13,7 @@ import type { Medicine } from "@/types/medicine"
 import type { CreatePrescriptionRequest } from "@/types/prescription"
 import { mockMedicines, searchMedicines } from "@/data/medicine"
 import { createPrescription } from "@/data/prescription"
+import { calculateAge } from "@/lib/PatientUtils"
 // import { addPrescriptionToRecord } from "@/data/medical-record"
 
 interface CreatePrescriptionDialogProps {
@@ -92,14 +93,15 @@ export function CreatePrescriptionDialog({
 
       // Create prescription request
       const prescriptionRequest: CreatePrescriptionRequest = {
-        patientID: patient.patientID,
-        doctorID: currentDoctorID,
+        patientId: patient.userId,
+        doctorId: currentDoctorID,
         medicines: validMedicines.map((item) => ({
           medicineID: item.medicine!.medicineID,
           dosage: item.dosage,
           quantity: item.quantity,
           note: item.note,
         })),
+        medicalRecordId: ""
       }
 
       // Create the prescription
@@ -111,7 +113,7 @@ export function CreatePrescriptionDialog({
       }
 
       alert(
-        `Prescription created successfully!\nPrescription ID: ${newPrescription.prescriptionID}\nTotal: $${newPrescription.totalPrice.toFixed(2)}${
+        `Prescription created successfully!\nPrescription ID: ${newPrescription.id}\nTotal: $${newPrescription.totalPrice.toFixed(2)}${
           medicalRecordID ? "\nLinked to medical record: " + medicalRecordID : ""
         }`,
       )
@@ -160,11 +162,11 @@ export function CreatePrescriptionDialog({
                 </div>
                 <div>
                   <p className="font-medium text-gray-500">Patient ID:</p>
-                  <p className="text-gray-900">{patient.patientID}</p>
+                  <p className="text-gray-900">{patient.userId}</p>
                 </div>
                 <div>
                   <p className="font-medium text-gray-500">Age:</p>
-                  <p className="text-gray-900">{patient.age} years</p>
+                  <p className="text-gray-900">{calculateAge(patient.DOB)} years</p>
                 </div>
               </div>
               {patient.allergies && patient.allergies !== "No known allergies" && (

@@ -1,5 +1,3 @@
-"use client"
-
 import { Button } from "@/components/ui/button"
 import { Filter } from "lucide-react"
 import {
@@ -15,7 +13,6 @@ interface PatientFiltersProps {
   filters: {
     showUrgentOnly: boolean
     genderFilter: string[]
-    conditionFilter: string[]
     ageRange: string
     bloodTypeFilter: string[]
   }
@@ -37,17 +34,6 @@ export function PatientFilters({ filters, onFilterChange }: PatientFiltersProps)
     }
   }
 
-  const toggleConditionFilter = (condition: string) => {
-    if (filters.conditionFilter.includes(condition)) {
-      onFilterChange(
-        "conditionFilter",
-        filters.conditionFilter.filter((c) => c !== condition),
-      )
-    } else {
-      onFilterChange("conditionFilter", [...filters.conditionFilter, condition])
-    }
-  }
-
   const toggleBloodTypeFilter = (bloodType: string) => {
     if (filters.bloodTypeFilter.includes(bloodType)) {
       onFilterChange(
@@ -63,7 +49,6 @@ export function PatientFilters({ filters, onFilterChange }: PatientFiltersProps)
   const activeFilterCount =
     (filters.showUrgentOnly ? 1 : 0) +
     filters.genderFilter.length +
-    filters.conditionFilter.length +
     (filters.ageRange !== "all" ? 1 : 0) +
     filters.bloodTypeFilter.length
 
@@ -82,13 +67,6 @@ export function PatientFilters({ filters, onFilterChange }: PatientFiltersProps)
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56">
         <DropdownMenuLabel>Filter Options</DropdownMenuLabel>
-        <DropdownMenuSeparator />
-        <DropdownMenuCheckboxItem
-          checked={filters.showUrgentOnly}
-          onCheckedChange={(checked) => onFilterChange("showUrgentOnly", checked)}
-        >
-          Urgent Cases Only
-        </DropdownMenuCheckboxItem>
         <DropdownMenuSeparator />
 
         <DropdownMenuLabel>Gender</DropdownMenuLabel>
@@ -141,18 +119,6 @@ export function PatientFilters({ filters, onFilterChange }: PatientFiltersProps)
             onCheckedChange={() => toggleBloodTypeFilter(bloodType)}
           >
             {bloodType}
-          </DropdownMenuCheckboxItem>
-        ))}
-
-        <DropdownMenuSeparator />
-        <DropdownMenuLabel>Medical Conditions</DropdownMenuLabel>
-        {["Hypertension", "Diabetes", "Asthma", "Arthritis", "Migraine", "COPD", "Heart Disease"].map((condition) => (
-          <DropdownMenuCheckboxItem
-            key={condition}
-            checked={filters.conditionFilter.includes(condition)}
-            onCheckedChange={() => toggleConditionFilter(condition)}
-          >
-            {condition}
           </DropdownMenuCheckboxItem>
         ))}
       </DropdownMenuContent>

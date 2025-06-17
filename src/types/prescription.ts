@@ -1,18 +1,21 @@
 import type { Medicine } from "@/types/medicine"
 
 export interface Prescription {
-  prescriptionID: string // uuid
-  patientID: string // uuid
-  doctorID: string // uuid
-  status: "pending" | "active" | "completed" | "cancelled" // varchar
+  [x: string]: any
+  details: any
+  id: string // uuid
+  patientId: string // uuid
+  doctorId: string // uuid
+  medicalRecordId: string 
+  status: "Taken" | "Not taken" // varchar
   totalPrice: number // decimal
   createdAt: string | Date // Datetime
 }
 
 export interface PrescriptionDetail {
-  detailID: string // uuid
-  prescriptionID: string // uuid
-  medicineID: string // uuid - Reference to medicine
+  id: string // uuid
+  prescriptionId: string // uuid
+  medicineId: string // uuid - Reference to medicine
   dosage: number // int (mg)
   quantity: number // int
   note: string // text
@@ -21,8 +24,9 @@ export interface PrescriptionDetail {
 }
 
 export interface CreatePrescriptionRequest {
-  patientID: string
-  doctorID: string
+  patientId: string
+  doctorId: string
+  medicalRecordId: string
   medicines: Array<{
     medicineID: string
     dosage: number

@@ -61,13 +61,13 @@ export function PrescriptionStatisticsCharts({ filters }: PrescriptionStatistics
 
     return mockPrescriptionDetails.filter((detail) => {
       // Filter by prescription ID (from filtered prescriptions)
-      if (!prescriptionIds.includes(detail.prescriptionID)) {
+      if (!prescriptionIds.includes(detail.id)) {
         return false
       }
 
       // Filter by medicine category
       if (filters.category !== "all") {
-        const medicine = getMedicineById(detail.medicineID)
+        const medicine = getMedicineById(detail.medicineId)
         if (!medicine || medicine.category.toLowerCase() !== filters.category.toLowerCase()) {
           return false
         }
@@ -107,7 +107,7 @@ export function PrescriptionStatisticsCharts({ filters }: PrescriptionStatistics
   // Medicine category distribution from prescription details
   const medicineCategories = useMemo(() => {
     return filteredPrescriptionDetails.reduce((acc: Record<string, number>, detail) => {
-      const medicine = getMedicineById(detail.medicineID)
+      const medicine = getMedicineById(detail.medicineId)
       if (medicine) {
         acc[medicine.category] = (acc[medicine.category] || 0) + 1
       }
@@ -126,7 +126,7 @@ export function PrescriptionStatisticsCharts({ filters }: PrescriptionStatistics
   // Top prescribed medicines
   const medicineCounts = useMemo(() => {
     return filteredPrescriptionDetails.reduce((acc: Record<string, number>, detail) => {
-      const medicine = getMedicineById(detail.medicineID)
+      const medicine = getMedicineById(detail.medicineId)
       if (medicine) {
         acc[medicine.name] = (acc[medicine.name] || 0) + detail.quantity
       }

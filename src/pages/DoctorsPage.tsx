@@ -31,11 +31,9 @@ const FindDoctorPage = () => {
     const matchesSpecialty = specialty === "all" || doctor.specialty.toLowerCase() === specialty.toLowerCase()
 
     const matchesLocation =
-      location === "all" || (doctor.location && doctor.location.toLowerCase().includes(location.toLowerCase()))
+      location === "all" || (doctor.address && doctor.address.toLowerCase().includes(location.toLowerCase()))
 
-    const matchesDate = !availableDate || (doctor.availability && doctor.availability.includes("Available today"))
-
-    return matchesQuery && matchesSpecialty && matchesLocation && matchesDate
+    return matchesQuery && matchesSpecialty && matchesLocation
   })
 
   // Paginate doctors
@@ -112,7 +110,7 @@ const FindDoctorPage = () => {
           {paginatedDoctors.length > 0 ? (
             paginatedDoctors.map((doctor) => (
               <DoctorCard
-                key={doctor.id}
+                key={doctor.userId}
                 doctor={doctor}
                 onBookAppointment={handleBookAppointment}
                 selectedDoctor={selectedDoctor}

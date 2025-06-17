@@ -1,3 +1,7 @@
+"use client"
+
+import type React from "react"
+
 import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
@@ -7,14 +11,13 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { FileText, Save, X } from "lucide-react"
-import type { DoctorPatient } from "@/data/doctor-patients"
 import type { MedicalRecord, CreateMedicalRecordRequest } from "@/types/medical-record"
-// import { createMedicalRecord } from "@/data/medical-record"
+import { Patient } from "@/types/patient"
 
 interface CreateMedicalRecordDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  patient: DoctorPatient | null
+  patient: Patient | null
   onRecordCreated: (record: MedicalRecord) => void
 }
 
@@ -38,7 +41,7 @@ export function CreateMedicalRecordDialog({
   // Update patient ID when patient changes
   useEffect(() => {
     if (patient) {
-      setFormData((prev) => ({ ...prev, patientID: patient.patientID }))
+      setFormData((prev) => ({ ...prev, patientID: patient.userId }))
     }
   }, [patient])
 
@@ -52,15 +55,8 @@ export function CreateMedicalRecordDialog({
 
     setIsSubmitting(true)
     try {
-      // Create the medical record
-      // const newRecord = createMedicalRecord(formData)
-
-      // Call the callback to update the parent component
-      // onRecordCreated(newRecord)
-
-      // Reset form and close dialog
       setFormData({
-        patientID: patient.patientID,
+        patientID: patient.userId,
         doctorID: "550e8400-e29b-41d4-a716-446655440001",
         diagnosis: "",
         treatment: "",
@@ -77,7 +73,7 @@ export function CreateMedicalRecordDialog({
 
   const handleCancel = () => {
     setFormData({
-      patientID: patient?.patientID || "",
+      patientID: patient?.userId || "",
       doctorID: "550e8400-e29b-41d4-a716-446655440001",
       diagnosis: "",
       treatment: "",
@@ -107,11 +103,11 @@ export function CreateMedicalRecordDialog({
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium">Patient Name</Label>
-                  <Input value={patient?.name || ""} disabled className="bg-gray-50 mt-2" />
+                  <Input value={patient?.name} className="bg-gray-50 mt-2" />
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Patient ID</Label>
-                  <Input value={patient?.patientID || ""} disabled className="bg-gray-50 mt-2" />
+                  <Input value={patient?.userId} className="bg-gray-50 mt-2" />
                 </div>
               </div>
             </CardContent>

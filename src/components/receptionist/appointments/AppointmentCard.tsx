@@ -1,105 +1,100 @@
-"use client"
-
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Clock, User, Edit, X, Trash2 } from "lucide-react"
+import { Clock, User, Edit, X } from "lucide-react"
 import type { Appointment } from "@/types/appointment"
+import { getStatusBadgeColor, getStatusText } from "@/lib/AppointmentUtils"
+import { getPatientById } from "@/data/patient"
+import { formatDate, formatTime } from "@/lib/DateTimeUtils"
 
 interface AppointmentCardProps {
   appointment: Appointment
-  patientName?: string
-  doctorName?: string
-  onEdit: (appointment: Appointment) => void
-  onCancel: (appointmentID: string) => void
-  onDelete: (appointmentID: string) => void
+  onEdit?: (appointmentID: string) => void
+  onDecline?: (appointmentID: string) => void
 }
 
-export function AppointmentCard({
-  appointment,
-  patientName = "Unknown Patient",
-  doctorName = "Unknown Doctor",
-  onEdit,
-  onCancel,
-  onDelete,
-}: AppointmentCardProps) {
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "confirmed":
-        return "bg-blue-100 text-blue-800"
-      case "completed":
-        return "bg-green-100 text-green-800"
-      case "cancelled":
+export function AppointmentCard({ appointment, onEdit, onDecline }: AppointmentCardProps) {
+  const patientName = getPatientById(appointment.patientID)?.name
+  const appointmentDate =
+    typeof appointment.appointmentDate === "string"
+      ? new Date(appointment.appointmentDate)
+      : appointment.appointmentDate
+
+  const createdDate =
+    typeof appointment.createdAt === "string" ? new Date(appointment.createdAt) : appointment.createdAt
+
+  const getDoctorName = (doctorID: string) => {
+    const doctorNames: Record<string, string> = {
+      "550e8400-e29b-41d4-a716-446655440001": "Dr. Sarah Wilson",
+      "550e8400-e29b-41d4-a716-446655440002": "Dr. Michael Chen",
+      "550e8400-e29b-41d4-a716-446655440003": "Dr. Emily Davis",
+    }
+    return doctorNames[doctorID] || "Unknown Doctor"
+  }
+
+  // Badge màu cho type
+  const getTypeBadgeColor = (type: Appointment["type"]) => {
+    switch (type) {
+      case "EMERGENCY":
         return "bg-red-100 text-red-800"
-      case "pending":
-        return "bg-yellow-100 text-yellow-800"
+      case "FOLLOW-UP":
+        return "bg-green-100 text-green-800"
       default:
         return "bg-gray-100 text-gray-800"
     }
   }
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "confirmed":
-        return "Confirmed"
-      case "completed":
-        return "Completed"
-      case "cancelled":
-        return "Cancelled"
-      case "pending":
-        return "Pending"
-      default:
-        return status
-    }
-  }
-
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="bg-white hover:shadow-sm transition-shadow">
       <CardContent className="p-4">
-        <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <div className="flex items-center space-x-3 mb-2">
-              <h4 className="font-medium">{patientName}</h4>
-              <Badge variant="secondary">#{appointment.appointmentID.slice(-8)}</Badge>
-              <Badge className={getStatusColor(appointment.status)}>{getStatusText(appointment.status)}</Badge>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-gray-600">
-              <div className="flex items-center">
-                <Clock className="h-4 w-4 mr-2" />
-                {appointment.appointmentTime}
-              </div>
-              <div className="flex items-center">
-                <User className="h-4 w-4 mr-2" />
-                {doctorName}
-              </div>
-              <div>Date: {appointment.appointmentDate.toLocaleDateString()}</div>
-              <div>Created: {appointment.createdAt.toLocaleDateString()}</div>
-            </div>
+        <div className="flex justify-between items-start mb-3">
+          <div className="flex items-center space-x-3">
+            <h3 className="text-lg font-semibold text-gray-900">{patientName}</h3>
+            <span className="text-sm text-gray-500">#{appointment.appointmentID.slice(-8)}</span>
+            <Badge className={getStatusBadgeColor(appointment.status)}>{getStatusText(appointment.status)}</Badge>
+            <Badge className={getTypeBadgeColor(appointment.type)}>{appointment.type}</Badge>
           </div>
 
-          <div className="flex space-x-2 ml-4">
-            <Button size="sm" variant="outline" onClick={() => onEdit(appointment)}>
-              <Edit className="h-4 w-4" />
-            </Button>
-            {(appointment.status === "confirmed" || appointment.status === "pending") && (
+          <div className="flex space-x-1">
+            {onEdit && (
               <Button
                 size="sm"
-                variant="outline"
-                className="text-red-600 hover:text-red-700"
-                onClick={() => onCancel(appointment.appointmentID)}
+                variant="ghost"
+                className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600"
+                onClick={() => onEdit(appointment.appointmentID)}
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            )}
+            {onDecline && (
+              <Button
+                size="sm"
+                variant="ghost"
+                className="h-8 w-8 p-0 text-gray-400 hover:text-red-600"
+                onClick={() => onDecline(appointment.appointmentID)}
               >
                 <X className="h-4 w-4" />
               </Button>
             )}
-            <Button
-              size="sm"
-              variant="outline"
-              className="text-red-600 hover:text-red-700"
-              onClick={() => onDelete(appointment.appointmentID)}
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4 text-sm text-gray-600">
+          <div className="flex items-center space-x-2">
+            <Clock className="h-4 w-4" />
+            <span>{formatTime(appointment.startTime)} - {formatTime(appointment.endTime)}</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <User className="h-4 w-4" />
+            <span>{getDoctorName(appointment.doctorID)}</span>
+          </div>
+          <div>
+            Date:{" "}
+            {formatDate(appointmentDate)}
+          </div>
+          <div>
+            Created:{" "}
+            {formatDate(createdDate)}
           </div>
         </div>
       </CardContent>

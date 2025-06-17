@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Eye, Download, Search } from "lucide-react"
 import { mockPrescriptions, getPrescriptionWithDetails } from "@/data/prescription"
-import { mockDoctorPatients } from "@/data/doctor-patients"
+import { mockPatients } from "@/data/patient"
 import { getMedicineById } from "@/data/medicine"
 import { format } from "date-fns"
 import { useState, useMemo } from "react"
@@ -53,7 +53,7 @@ export function PrescriptionStatisticsTable({ filters }: PrescriptionStatisticsT
 
           // Check if any medicine in the prescription matches the category
           const hasMedicineInCategory = prescriptionWithDetails.details.some((detail) => {
-            const medicine = getMedicineById(detail.medicineID)
+            const medicine = getMedicineById(detail.medicineId)
             return medicine && medicine.category.toLowerCase() === filters.category.toLowerCase()
           })
 
@@ -63,7 +63,7 @@ export function PrescriptionStatisticsTable({ filters }: PrescriptionStatisticsT
         return true
       })
       .map((prescription) => {
-        const patient = mockDoctorPatients.find((p) => p.patientID === prescription.patientID)
+        const patient = mockPatients.find((p) => p.userId === prescription.patientID)
         const prescriptionWithDetails = getPrescriptionWithDetails(prescription.prescriptionID)
 
         // Determine status based on prescription status
@@ -84,18 +84,18 @@ export function PrescriptionStatisticsTable({ filters }: PrescriptionStatisticsT
           id: prescription.prescriptionID,
           patientName: patient ? patient.name : "Unknown Patient",
           doctorName:
-            filters.doctorId !== "all" && filters.doctorId === prescription.doctorID
+            filters.doctorId !== "all" && filters.doctorId === prescription.doctorId
               ? "Dr. Sarah Johnson"
               : prescription.doctorID === "550e8400-e29b-41d4-a716-446655440002"
                 ? "Dr. Michael Chen"
                 : prescription.doctorID === "550e8400-e29b-41d4-a716-446655440003"
                   ? "Dr. Emily Rodriguez"
-                  : `Dr. ${prescription.doctorID.substring(0, 8)}`,
+                  : `Dr. ${prescription.doctorId?.substring(0, 8)}`,
           medicineCount: prescriptionWithDetails?.details.length || 0,
           medicines:
             prescriptionWithDetails?.details
               .map((d) => {
-                const medicine = getMedicineById(d.medicineID)
+                const medicine = getMedicineById(d.medicineId)
                 return medicine ? medicine.name : "Unknown"
               })
               .join(", ") || "",

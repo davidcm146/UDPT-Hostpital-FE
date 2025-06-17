@@ -24,7 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { BarChart3, Users, Pill, Settings, LogOut, User, Shield, Home } from "lucide-react"
+import { BarChart3, Users, Pill, LogOut, User, Shield, Home } from "lucide-react"
 
 const adminMenuItems = [
   {
@@ -46,12 +46,7 @@ const adminMenuItems = [
     title: "Patient Management",
     url: "/admin/patient-management",
     icon: Users,
-  },
-  {
-    title: "Settings",
-    url: "/admin/settings",
-    icon: Settings,
-  },
+  }
 ]
 
 export default function AdminLayout() {
@@ -120,11 +115,6 @@ export default function AdminLayout() {
                       <User className="mr-2 h-4 w-4" />
                       Profile
                     </DropdownMenuItem>
-                    <DropdownMenuItem>
-                      <Settings className="mr-2 h-4 w-4" />
-                      Settings
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
                     <DropdownMenuItem onClick={handleLogout}>
                       <LogOut className="mr-2 h-4 w-4" />
                       Logout

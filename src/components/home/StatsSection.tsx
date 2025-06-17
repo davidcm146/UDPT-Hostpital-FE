@@ -41,7 +41,7 @@ const Stat = ({ value, label, suffix = "", duration = 2000 }: StatProps) => {
 
 const StatsSection = () => {
   return (
-    <section className="py-20 bg-white">
+    <section className="pt-20 bg-white">
       <div className="container mx-auto w-full">
         <div className="text-center mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Trusted by Healthcare Professionals</h2>
@@ -57,7 +57,7 @@ const StatsSection = () => {
           <Stat value={100} label="Patients Served" suffix="+" />
         </div>
 
-        <div className="mt-20 bg-gradient-to-r from-teal-50 to-blue-50 p-8 md:p-12 rounded-2xl px-8">
+        <div className="mt-20 h-full bg-gradient-to-r from-teal-50 to-blue-50 p-8 md:p-12 rounded-2xl px-8">
           <div className="flex flex-col md:flex-row items-center">
             <div className="md:w-2/3 mb-8 md:mb-0 md:pr-8">
               <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
