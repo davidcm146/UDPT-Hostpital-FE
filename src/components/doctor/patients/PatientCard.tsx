@@ -138,20 +138,11 @@ export function PatientCard({ patient, onViewRecords, onViewPrescriptions, onSch
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-wrap gap-2">
-          <Button className="bg-teal-600 hover:bg-teal-700 flex-1" onClick={handleViewRecords}>
+          <Button className="bg-teal-600 w-36 hover:bg-teal-700 flex-1" onClick={handleViewRecords}>
             <ClipboardList className="mr-2 h-4 w-4" />
-            Medical Records
+            View Details
           </Button>
-          <Button variant="outline" className="flex-1" onClick={handleViewPrescriptions}>
-            <Pill className="mr-2 h-4 w-4" />
-            Prescriptions ({prescriptionCount})
-          </Button>
-          <Button variant="outline" className="flex-1" onClick={handleScheduleAppointment}>
-            <Calendar className="mr-2 h-4 w-4" />
-            Schedule
-          </Button>
-        </div>
+        
 
         {/* Footer with Last Updated */}
         <div className="mt-4 pt-3 border-t border-gray-100">

@@ -5,14 +5,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { FileText } from "lucide-react"
 import type { Patient } from "@/types/patient"
 import type { MedicalRecord } from "@/types/medical-record"
-import type { PrescriptionWithDetails } from "@/types/prescription"
 import { CreatePrescriptionDialog } from "../prescriptions/CreatePrescriptionDialog"
 import { PrescriptionDetailsDialog } from "../prescriptions/PrescriptionDetailsDialog"
 import { getMedicalRecordsByPatient } from "@/data/medical-record"
 import { getPrescriptionsByMedicalRecord, getPrescriptionsByPatient } from "@/data/prescription"
 import { PatientInfo } from "./PatientInfo"
 import { MedicalHistoryTab } from "./MedicalHistoryTab"
-import { PrescriptionTab } from "./PrescriptionTab"
 
 interface PatientDetailsDialogProps {
   open: boolean
