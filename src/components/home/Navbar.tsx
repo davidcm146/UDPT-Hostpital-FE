@@ -22,12 +22,14 @@ import {
   faUserCircle,
   faChevronDown,
   faSignOutAlt,
+  faBell,
 } from "@fortawesome/free-solid-svg-icons"
 import { Calendar } from "lucide-react"
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(true) // Change this based on your auth state
+  const [notificationCount, setNotificationCount] = useState(3) // Mock notification count
   const location = useLocation()
 
   const isActive = (path: string) => {
@@ -37,6 +39,11 @@ const Navbar = () => {
   const handleLogout = () => {
     // Add your logout logic here
     setIsLoggedIn(false)
+  }
+
+  const handleNotificationClick = () => {
+    // Add your notification logic here
+    console.log("Notifications clicked")
   }
 
   return (
@@ -52,25 +59,43 @@ const Navbar = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1 lg:space-x-4">
-              <Link
-                to="/"
-                className={`px-3 py-2 rounded-md ${isActive("/") ? "text-teal-600 font-medium" : "text-gray-700 hover:text-teal-600"
-                  } transition-colors`}
-              >
-                Home
-              </Link>
+            <Link
+              to="/"
+              className={`px-3 py-2 rounded-md ${
+                isActive("/") ? "text-teal-600 font-medium" : "text-gray-700 hover:text-teal-600"
+              } transition-colors`}
+            >
+              Home
+            </Link>
 
-              <Link
-                to="/about"
-                className={`px-3 py-2 rounded-md ${isActive("/about") ? "text-teal-600 font-medium" : "text-gray-700 hover:text-teal-600"
-                  } transition-colors`}
-              >
-                About
-              </Link>
+            <Link
+              to="/about"
+              className={`px-3 py-2 rounded-md ${
+                isActive("/about") ? "text-teal-600 font-medium" : "text-gray-700 hover:text-teal-600"
+              } transition-colors`}
+            >
+              About
+            </Link>
 
-            {/* User Dropdown Menu (when logged in) */}
+            {/* Notification Bell and User Dropdown Menu (when logged in) */}
             {isLoggedIn ? (
               <div className="flex items-center space-x-4 ml-4">
+                {/* Notification Bell */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleNotificationClick}
+                  className="relative text-gray-700 hover:text-teal-600"
+                >
+                  <FontAwesomeIcon icon={faBell} className="h-5 w-5" />
+                  {notificationCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {notificationCount > 9 ? "9+" : notificationCount}
+                    </span>
+                  )}
+                </Button>
+
+                {/* User Dropdown */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="flex items-center space-x-2 text-gray-700 hover:text-teal-600">
@@ -101,7 +126,7 @@ const Navbar = () => {
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link to="/appointments" className="flex items-center w-full px-2 py-2 text-sm">
-                        <Calendar className="mr-2 h-4 w-4"/>
+                        <Calendar className="mr-2 h-4 w-4" />
                         Appointments
                       </Link>
                     </DropdownMenuItem>
@@ -173,6 +198,26 @@ const Navbar = () => {
                   {isLoggedIn && (
                     <>
                       <div className="border-t border-gray-200 my-2"></div>
+
+                      {/* Mobile Notifications */}
+                      <button
+                        onClick={() => {
+                          handleNotificationClick()
+                          setIsOpen(false)
+                        }}
+                        className="flex items-center justify-between px-3 py-2 rounded-md text-gray-700 hover:bg-gray-100"
+                      >
+                        <div className="flex items-center">
+                          <FontAwesomeIcon icon={faBell} className="mr-2 h-4 w-4" />
+                          Notifications
+                        </div>
+                        {notificationCount > 0 && (
+                          <span className="bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                            {notificationCount > 9 ? "9+" : notificationCount}
+                          </span>
+                        )}
+                      </button>
+
                       <div className="px-3 py-2 text-sm font-medium text-gray-500 uppercase tracking-wider">
                         My Account
                       </div>
