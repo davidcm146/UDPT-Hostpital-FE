@@ -54,17 +54,18 @@ export function PatientEditForm({ patient, onSave, onCancel }: PatientEditFormPr
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="name">Full Name</Label>
-                <Input id="name" value={editForm.name} onChange={(e) => handleInputChange("name", e.target.value)} />
+                <Input id="name" className="mt-2" value={editForm.name} onChange={(e) => handleInputChange("name", e.target.value)} />
               </div>
               <div>
                 <Label htmlFor="phone">Phone Number</Label>
-                <Input id="phone" value={editForm.phone} onChange={(e) => handleInputChange("phone", e.target.value)} />
+                <Input id="phone" className="mt-2" value={editForm.phoneNumber} onChange={(e) => handleInputChange("phoneNumber", e.target.value)} />
               </div>
               <div>
                 <Label htmlFor="email">Email</Label>
                 <Input
                   id="email"
                   type="email"
+                  className="mt-2"
                   value={editForm.email || ""}
                   onChange={(e) => handleInputChange("email", e.target.value)}
                 />
@@ -74,19 +75,20 @@ export function PatientEditForm({ patient, onSave, onCancel }: PatientEditFormPr
                 <Input
                   id="dateOfBirth"
                   type="date"
+                  className="mt-2"
                   value={
-                    editForm.DOB instanceof Date
-                      ? editForm.DOB.toISOString().slice(0, 10)
-                      : editForm.DOB || ""
+                    editForm.dob instanceof Date
+                      ? editForm.dob.toISOString().slice(0, 10)
+                      : editForm.dob || ""
                   }
-                  onChange={(e) => handleInputChange("DOB", e.target.value)}
+                  onChange={(e) => handleInputChange("dob", e.target.value)}
                 />
               </div>
               <div>
                 <Label htmlFor="gender">Gender</Label>
                 <select
                   id="gender"
-                  className="w-full p-2 border border-gray-300 rounded-md"
+                  className="w-full mt-2 p-2 border border-gray-300 rounded-md"
                   value={editForm.gender}
                   onChange={(e) => handleInputChange("gender", e.target.value)}
                 >
@@ -108,6 +110,7 @@ export function PatientEditForm({ patient, onSave, onCancel }: PatientEditFormPr
                 <Input
                   id="height"
                   type="number"
+                  className="mt-2"
                   value={editForm.height || ""}
                   onChange={(e) => handleInputChange("height", Number.parseInt(e.target.value))}
                 />
@@ -117,6 +120,7 @@ export function PatientEditForm({ patient, onSave, onCancel }: PatientEditFormPr
                 <Input
                   id="weight"
                   type="number"
+                  className="mt-2"
                   value={editForm.weight || ""}
                   onChange={(e) => handleInputChange("weight", Number.parseInt(e.target.value))}
                 />
@@ -125,7 +129,7 @@ export function PatientEditForm({ patient, onSave, onCancel }: PatientEditFormPr
                 <Label htmlFor="bloodType">Blood Type</Label>
                 <select
                   id="bloodType"
-                  className="w-full p-2 border border-gray-300 rounded-md"
+                  className="w-full mt-2 p-2 border border-gray-300 rounded-md"
                   value={editForm.bloodType}
                   onChange={(e) => handleInputChange("bloodType", e.target.value)}
                 >
@@ -167,6 +171,7 @@ export function PatientEditForm({ patient, onSave, onCancel }: PatientEditFormPr
             <Textarea
               id="address"
               value={editForm.address}
+              className="mt-2"
               onChange={(e) => handleInputChange("address", e.target.value)}
               rows={2}
             />
@@ -180,6 +185,7 @@ export function PatientEditForm({ patient, onSave, onCancel }: PatientEditFormPr
                 <Label htmlFor="allergies">Allergies</Label>
                 <Input
                   id="allergies"
+                  className="mt-2"
                   value={editForm.allergies}
                   onChange={(e) => handleInputChange("allergies", e.target.value)}
                 />
@@ -188,6 +194,7 @@ export function PatientEditForm({ patient, onSave, onCancel }: PatientEditFormPr
                 <Label htmlFor="pastIllness">Past Illness</Label>
                 <Textarea
                   id="pastIllness"
+                  className="mt-2"
                   value={editForm.pastIllness || ""}
                   onChange={(e) => handleInputChange("pastIllness", e.target.value)}
                   rows={2}
@@ -205,7 +212,7 @@ export function PatientEditForm({ patient, onSave, onCancel }: PatientEditFormPr
                   value={editForm.smokingStatus || ""}
                   onValueChange={(value) => handleInputChange("smokingStatus", value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="mt-2">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
                   <SelectContent>
@@ -223,7 +230,7 @@ export function PatientEditForm({ patient, onSave, onCancel }: PatientEditFormPr
                   value={editForm.alcoholConsumption || ""}
                   onValueChange={(value) => handleInputChange("alcoholConsumption", value)}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="mt-2">
                     <SelectValue placeholder="Select level" />
                   </SelectTrigger>
                   <SelectContent>

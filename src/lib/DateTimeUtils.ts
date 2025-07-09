@@ -15,3 +15,34 @@ export function formatTime(time: string): string {
   const m = String(minutes).padStart(2, "0")
   return `${h}:${m}`
 }
+
+export function formatTimeFromHHMM(time: string): string {
+  const [hours, minutes] = time.split(":")
+  if (!hours || !minutes) return "Invalid time"
+
+  const h = String(hours).padStart(2, "0")
+  const m = String(minutes).padStart(2, "0")
+  return `${h}:${m}`
+}
+
+export function formatTimeFromISO(isoString: string): string {
+  const date = new Date(isoString)
+  if (isNaN(date.getTime())) return "Invalid time"
+
+  const h = String(date.getHours()).padStart(2, "0")
+  const m = String(date.getMinutes()).padStart(2, "0")
+  return `${h}:${m}`
+}
+
+export const formatDuration = (minutes: number): string => {
+  const hours = Math.floor(minutes / 60)
+  const mins = minutes % 60
+  if (hours === 0) return `${mins} minutes`
+  if (mins === 0) return `${hours} hour${hours > 1 ? "s" : ""}`
+  return `${hours} hour${hours > 1 ? "s" : ""} ${mins} minutes`
+}
+
+export const formatTimeForAPI = (date: Date, time: string): string => {
+  const dateStr = date.toISOString().split("T")[0] // YYYY-MM-DD
+  return `${dateStr} ${time}:00` // YYYY-MM-DD HH:mm:ss
+}

@@ -1,5 +1,4 @@
-"use client"
-
+import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { MapPin, Calendar, GraduationCap, Phone, Mail } from "lucide-react"
@@ -26,6 +25,26 @@ const DoctorCard = ({
   setSelectedDate,
   onConfirmAppointment,
 }: DoctorCardProps) => {
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+
+  const handleBookAppointment = () => {
+    onBookAppointment(doctor)
+    setIsDialogOpen(true)
+  }
+
+  const handleConfirmAppointment = () => {
+    onConfirmAppointment()
+    setIsDialogOpen(false) // Close dialog after successful appointment creation
+  }
+
+  const handleDialogOpenChange = (open: boolean) => {
+    setIsDialogOpen(open)
+    if (!open) {
+      // Reset selected date when dialog is closed
+      setSelectedDate(undefined)
+    }
+  }
+
   return (
     <Card className="overflow-hidden hover:shadow-lg transition-shadow duration-300">
       <CardContent className="p-0">
@@ -44,7 +63,6 @@ const DoctorCard = ({
                   <h3 className="text-xl font-semibold text-gray-900">{doctor.name}</h3>
                 </div>
                 <p className="text-gray-600 mb-4 font-medium">{doctor.specialty}</p>
-
                 <div className="space-y-2 mb-4">
                   <div className="flex items-center text-gray-600">
                     <GraduationCap className="w-4 h-4 text-teal-600 mr-2" />
@@ -62,7 +80,7 @@ const DoctorCard = ({
                   )}
                   <div className="flex items-center text-gray-600">
                     <Phone className="w-4 h-4 text-teal-600 mr-2" />
-                    <span className="text-sm">{doctor.phone}</span>
+                    <span className="text-sm">{doctor.phoneNumber}</span>
                   </div>
                   <div className="flex items-center text-gray-600">
                     <Mail className="w-4 h-4 text-teal-600 mr-2" />
@@ -70,14 +88,13 @@ const DoctorCard = ({
                   </div>
                 </div>
               </div>
-
               <div className="mt-4 flex flex-col md:mt-0 md:ml-4 md:text-right">
                 <div className="flex flex-col gap-y-4 h-52">
-                  <Dialog>
+                  <Dialog open={isDialogOpen} onOpenChange={handleDialogOpenChange}>
                     <DialogTrigger asChild>
                       <Button
                         className="bg-teal-600 hover:bg-teal-700 w-full md:w-auto"
-                        onClick={() => onBookAppointment(doctor)}
+                        onClick={handleBookAppointment}
                       >
                         Book Appointment
                       </Button>
@@ -85,15 +102,12 @@ const DoctorCard = ({
                     <AppointmentDialog
                       selectedDoctor={selectedDoctor}
                       selectedDate={selectedDate}
-                      
                       setSelectedDate={setSelectedDate}
-                      
-                      onConfirmAppointment={onConfirmAppointment}
+                      onConfirmAppointment={handleConfirmAppointment}
                     />
                   </Dialog>
                 </div>
               </div>
-
             </div>
           </div>
         </div>

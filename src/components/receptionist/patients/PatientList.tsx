@@ -33,9 +33,8 @@ export function PatientList({
   }
 
   const getCardStyle = (patient: Patient) => {
-    const isSelected = selectedPatient?.userId === patient.userId
-    const isEditing = editingPatient?.userId === patient.userId
-
+    const isSelected = selectedPatient?.id === patient.id
+    const isEditing = editingPatient?.id === patient.id
     if (isSelected && isEditing) {
       return "bg-amber-50 border-amber-300 ring-2 ring-amber-300"
     } else if (isEditing) {
@@ -53,7 +52,7 @@ export function PatientList({
       <div className="space-y-3 mb-4">
         {patients.slice(0, visibleCount).map((patient) => (
           <Card
-            key={patient.userId}
+            key={patient.id}
             className={`cursor-pointer transition-all ${getCardStyle(patient)}`}
             onClick={() => onSelectPatient(patient)}
           >
@@ -61,16 +60,16 @@ export function PatientList({
               <div className="flex justify-between items-start">
                 <div>
                   <h4 className="font-medium">{patient.name}</h4>
-                  <p className="text-sm text-gray-500">Patient ID: {patient.userId}</p>
+                  <p className="text-sm text-gray-500">Patient ID: {patient.id}</p>
                   <div className="flex items-center mt-1">
                     <Phone className="h-3 w-3 mr-1 text-gray-400" />
-                    <span className="text-sm text-gray-600">{patient.phone}</span>
+                    <span className="text-sm text-gray-600">{patient.phoneNumber}</span>
                   </div>
                 </div>
                 <Button
                   size="sm"
-                  variant={editingPatient?.userId === patient.userId ? "default" : "outline"}
-                  className={editingPatient?.userId === patient.userId ? "bg-amber-500 hover:bg-amber-600" : ""}
+                  variant={editingPatient?.id === patient.id ? "default" : "outline"}
+                  className={editingPatient?.id === patient.id ? "bg-amber-500 hover:bg-amber-600" : ""}
                   onClick={(e) => {
                     e.stopPropagation()
                     onEditPatient(patient)
@@ -79,7 +78,7 @@ export function PatientList({
                   <Edit className="h-4 w-4" />
                 </Button>
               </div>
-              {editingPatient?.userId === patient.userId && (
+              {editingPatient?.id === patient.id && (
                 <div className="mt-2 text-xs text-amber-600 font-medium flex items-center">
                   <Edit className="h-3 w-3 mr-1" /> Currently editing
                 </div>
@@ -88,7 +87,6 @@ export function PatientList({
           </Card>
         ))}
       </div>
-
       {/* View More button */}
       {visibleCount < patients.length && (
         <div className="flex justify-center mt-4">
@@ -97,7 +95,6 @@ export function PatientList({
           </Button>
         </div>
       )}
-
       {/* Info text */}
       {patients.length > 0 && (
         <div className="text-sm text-gray-500 mt-2 text-center">

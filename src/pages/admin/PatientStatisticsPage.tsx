@@ -1,7 +1,6 @@
 import { useState } from "react"
 import { PatientStatisticsHeader } from "@/components/admin/statistics/PatientStatisticsHeader"
 import { PatientStatisticsCharts } from "@/components/admin/statistics/PatientStatisticsCharts"
-import { PatientStatisticsTable } from "@/components/admin/statistics/PatientStatisticsTable"
 import { PatientStatisticsFilters } from "@/components/admin/statistics/PatientStatisticsFilters"
 
 export default function PatientStatisticsPage() {
@@ -21,7 +20,6 @@ export default function PatientStatisticsPage() {
       <PatientStatisticsHeader />
       <PatientStatisticsFilters onFilterChange={handleFilterChange} />
       <PatientStatisticsCharts filters={filters} />
-      <PatientStatisticsTable filters={filters} />
     </div>
   )
 }

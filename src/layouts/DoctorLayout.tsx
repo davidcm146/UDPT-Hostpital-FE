@@ -1,14 +1,42 @@
+"use client"
+
 import { useState } from "react"
-import { Link, Outlet, useLocation } from "react-router-dom"
+import { Link, Navigate, Outlet, useLocation } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Menu, Bell, Calendar, ClipboardList, Users, LogOut, User, FileText } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Menu, Bell, Calendar, ClipboardList, Users, LogOut, User, FileText, Loader2 } from "lucide-react"
+import { useAuth } from "@/hooks/AuthContext"
+import { toast } from "react-toastify"
 
 const DoctorLayout = () => {
   const [isOpen, setIsOpen] = useState(false)
+  const { user, logout, isLoading } = useAuth()
   const location = useLocation()
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-center">
+        <Loader2 className="h-10 w-10 animate-spin text-teal-600 mb-4" />
+        <h2 className="text-lg font-semibold text-teal-600">Loading ...</h2>
+      </div>
+    )
+  }
+
+  if (!user) return <Navigate to="/login" state={{ from: location }} replace />
+
+  if (user && user.role !== "DOCTOR") {
+    toast.error("You are not authorized to visit this page")
+    return <Navigate to="/" replace />
+  }
 
   const isActive = (path: string) => {
     return location.pathname.startsWith(path)
@@ -23,7 +51,7 @@ const DoctorLayout = () => {
     notifications: 3,
   }
 
-  // Navigation items
+  // Navigation items - logout button is NOT included here as requested
   const navigationItems = [
     {
       path: "/doctor/schedule",
@@ -69,7 +97,6 @@ const DoctorLayout = () => {
               </Link>
               <span className="hidden md:inline-block text-gray-500">Doctor Portal</span>
             </div>
-
             <div className="flex items-center space-x-4">
               {/* Notifications */}
               <TooltipProvider>
@@ -90,17 +117,38 @@ const DoctorLayout = () => {
                 </Tooltip>
               </TooltipProvider>
 
+              {/* Desktop Profile Dropdown */}
               <div className="hidden md:flex items-center">
-                <Avatar className="h-8 w-8 mr-2">
-                  <AvatarImage src={doctor.avatar || "/placeholder.svg"} alt={doctor.name} />
-                  <AvatarFallback className="bg-teal-600 text-white">SJ</AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">{doctor.name}</span>
-                  <span className="text-xs text-gray-500">{doctor.specialty}</span>
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="flex items-center space-x-2 hover:bg-gray-100">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={doctor.avatar || "/placeholder.svg"} alt={doctor.name} />
+                        <AvatarFallback className="bg-teal-600 text-white">SJ</AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col text-left">
+                        <span className="text-sm font-medium">{doctor.name}</span>
+                        <span className="text-xs text-gray-500">{doctor.specialty}</span>
+                      </div>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem asChild>
+                      <Link to="/doctor/profile" className="flex items-center">
+                        <User className="mr-2 h-4 w-4" />
+                        My Profile
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={logout} className="text-red-600 focus:text-red-600">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
+              {/* Mobile Menu */}
               <Sheet open={isOpen} onOpenChange={setIsOpen}>
                 <SheetTrigger asChild>
                   <Button variant="ghost" size="icon" className="md:hidden">
@@ -121,7 +169,6 @@ const DoctorLayout = () => {
                         </p>
                       </div>
                     </div>
-
                     <nav className="flex-1 overflow-auto py-6">
                       <ul className="space-y-2 px-2">
                         {navigationItems.map((item) => (
@@ -142,12 +189,12 @@ const DoctorLayout = () => {
                         ))}
                       </ul>
                     </nav>
-
+                    {/* Mobile logout button - easily accessible */}
                     <div className="p-4 border-t">
                       <Button
                         variant="outline"
-                        className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => setIsOpen(false)}
+                        className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent"
+                        onClick={logout}
                       >
                         <LogOut className="mr-2 h-4 w-4" />
                         Sign Out
@@ -160,7 +207,6 @@ const DoctorLayout = () => {
           </div>
         </div>
       </header>
-
       {/* Main Content */}
       <div className="flex min-h-[calc(100vh-64px)]">
         {/* Sidebar - Desktop Only */}
@@ -178,7 +224,6 @@ const DoctorLayout = () => {
                 </p>
               </div>
             </div>
-
             <nav className="flex-1 overflow-auto py-6">
               <ul className="space-y-2 px-2">
                 {navigationItems.map((item) => (
@@ -196,19 +241,8 @@ const DoctorLayout = () => {
                 ))}
               </ul>
             </nav>
-
-            <div className="p-4 border-t">
-              <Button
-                variant="outline"
-                className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
-              </Button>
-            </div>
           </div>
         </aside>
-
         {/* Main Content */}
         <main className="flex-1 p-6">
           <div className="container mx-auto">

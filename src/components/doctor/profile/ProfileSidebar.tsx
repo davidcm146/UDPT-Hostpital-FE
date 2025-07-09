@@ -37,7 +37,7 @@ const ProfileSidebar = ({ doctorData, isEditing }: ProfileSidebarProps) => {
           </div>
           <h2 className="text-xl font-bold text-gray-900">{doctorData.name}</h2>
           <p className="text-gray-500 text-sm">{doctorData.specialty}</p>
-          <p className="text-gray-500 text-sm mt-1">Staff ID: {doctorData.userId}</p>
+          <p className="text-gray-500 text-sm mt-1">Staff ID: {doctorData.id}</p>
         </div>
 
         <Separator className="my-6" />

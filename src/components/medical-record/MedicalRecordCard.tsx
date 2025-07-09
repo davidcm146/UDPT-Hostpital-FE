@@ -5,6 +5,7 @@ import { Badge } from "../ui/badge"
 import { CalendarDays, FileText, User } from "lucide-react"
 import { Button } from "../ui/button"
 import { getVisitTypeIcon } from "@/lib/MedicalRecordUtils"
+import { formatDate } from "@/lib/DateTimeUtils"
 
 interface MedicalRecordCardProps {
   medicalRecord: MedicalRecord
@@ -52,7 +53,7 @@ export const MedicalRecordCard = ({ medicalRecord, onViewDetails }: MedicalRecor
           <div className="mt-3 grid grid-cols-2 gap-2">
             <div className="flex items-center text-sm">
               <CalendarDays className="h-4 w-4 text-gray-400 mr-2" />
-              <span>{new Date(medicalRecord.visitDate).toLocaleDateString()}</span>
+              <span>{formatDate(medicalRecord.visitDate)}</span>
             </div>
             <div className="flex items-center text-sm">
               <User className="h-4 w-4 text-gray-400 mr-2" />

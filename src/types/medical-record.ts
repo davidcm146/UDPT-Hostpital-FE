@@ -2,13 +2,29 @@ export interface MedicalRecord {
   id: string // uuid
   patientId: string // uuid
   doctorId: string // uuid
+  doctorName: string
+  patientName: string
+  patientPhoneNumber: string
   diagnosis: string
   treatment: string
   description: string
-  visitDate: Date
-  createdAt: Date
-  // Additional simple properties
-  visitType: "Regular Checkup" | "Follow-up" | "Emergency" | "Consultation"
+  visitDate: Date | string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  visitType: "CHECKUP" | "FOLLOW_UP" | "EMERGENCY" | "CONSULTATION"
+}
+
+export interface MedicalRecordsParams {
+  doctorId?: string
+  patientId?: string
+  doctorName?: string
+  visitType?: string
+  from?: string
+  to?: string
+  diagnosis?: string
+  limit?: number
+  offset?: number
+  signal?: AbortSignal
 }
 
 export interface CreateMedicalRecordRequest {

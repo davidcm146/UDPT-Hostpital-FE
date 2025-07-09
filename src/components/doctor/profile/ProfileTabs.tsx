@@ -2,20 +2,20 @@
 
 import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { User, GraduationCap, Calendar } from "lucide-react"
+import { User, Calendar } from "lucide-react"
 import PersonalInfoTab from "./PersonalInfoTab"
 import ScheduleTab from "./ScheduleTab"
 import type { Doctor } from "@/types/doctor"
-import type { Schedule } from "@/types/schedule"
+import type { ScheduleResponse } from "@/types/schedule"
 
 interface ProfileTabsProps {
   doctorData: Doctor
   isEditing: boolean
   onSave?: (data: Partial<Doctor>) => void
-  // onScheduleSave?: (data: Partial<Schedule[]>) => void
+  isSaving?: boolean
 }
 
-const ProfileTabs = ({ doctorData, isEditing, onSave }: ProfileTabsProps) => {
+const ProfileTabs = ({ doctorData, isEditing, onSave}: ProfileTabsProps) => {
   const [activeTab, setActiveTab] = useState("personal")
 
   return (
@@ -38,10 +38,7 @@ const ProfileTabs = ({ doctorData, isEditing, onSave }: ProfileTabsProps) => {
 
       {/* Schedule Tab */}
       <TabsContent value="schedule">
-        <ScheduleTab doctorData={doctorData}
-        // isEditing={isEditing} 
-        // onSave={onScheduleSave}
-         />
+        <ScheduleTab doctorData={doctorData} />
       </TabsContent>
     </Tabs>
   )

@@ -38,10 +38,10 @@ export const formatAppointmentTime = (startTime: string, endTime: string): strin
   return `${startTime} - ${endTime}`
 }
 
-export const calculateDuration = (startTime: string, endTime: string): string => {
-  const start = new Date(`2000-01-01T${startTime}:00`)
-  const end = new Date(`2000-01-01T${endTime}:00`)
+export const calculateDuration = (startTime: string, endTime: string) => {
+  const start = new Date(startTime.replace(" ", "T"))
+  const end = new Date(endTime.replace(" ", "T"))
   const diffMs = end.getTime() - start.getTime()
-  const diffMins = Math.floor(diffMs / (1000 * 60))
+  const diffMins = Math.round(diffMs / (1000 * 60))
   return `${diffMins} min`
 }

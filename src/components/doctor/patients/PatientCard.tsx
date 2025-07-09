@@ -13,20 +13,10 @@ interface PatientCardProps {
   onScheduleAppointment?: (patientID: string) => void
 }
 
-export function PatientCard({ patient, onViewRecords, onViewPrescriptions, onScheduleAppointment }: PatientCardProps) {
+export function PatientCard({ patient, onViewRecords }: PatientCardProps) {
   const handleViewRecords = () => {
-    onViewRecords?.(patient.userId)
+    onViewRecords?.(patient.id)
   }
-
-  const handleViewPrescriptions = () => {
-    onViewPrescriptions?.(patient.userId)
-  }
-
-  const handleScheduleAppointment = () => {
-    onScheduleAppointment?.(patient.userId)
-  }
-
-  const prescriptionCount = getPrescriptionsByPatient(patient.userId).length || 0
 
   return (
     <Card className="hover:shadow-md transition-shadow">
@@ -51,7 +41,7 @@ export function PatientCard({ patient, onViewRecords, onViewPrescriptions, onSch
                   <div className="flex items-center text-sm text-gray-500">
                     <User className="h-3 w-3 mr-1" />
                     <span>
-                      {calculateAge(patient?.DOB)} years, {patient.gender}
+                      {calculateAge(patient?.dob)} years, {patient.gender}
                     </span>
                   </div>
                   <div className="flex items-center text-sm text-gray-500">
@@ -62,7 +52,7 @@ export function PatientCard({ patient, onViewRecords, onViewPrescriptions, onSch
               </div>
 
               <div className="text-right">
-                <p className="text-xs text-gray-400">ID: {patient.userId?.slice(-8)}</p>
+                <p className="text-xs text-gray-400">ID: {patient.id?.slice(-8)}</p>
                 {patient.occupation && <p className="text-xs text-gray-500 mt-1">{patient.occupation}</p>}
               </div>
             </div>
@@ -73,7 +63,7 @@ export function PatientCard({ patient, onViewRecords, onViewPrescriptions, onSch
         <div className="flex items-center space-x-4 mb-4 text-sm text-gray-600">
           <div className="flex items-center">
             <Phone className="h-3 w-3 mr-1" />
-            <span>{patient.phone}</span>
+            <span>{patient.phoneNumber}</span>
           </div>
           {patient.email && (
             <div className="flex items-center">

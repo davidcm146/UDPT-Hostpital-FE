@@ -1,17 +1,21 @@
 "use client"
 
-import { useState } from "react"
-import { mockDoctors } from "@/data/doctors"
+import { useState, useEffect } from "react"
+import { toast } from "react-toastify"
 import type { Doctor } from "@/types/doctor"
+import { Loading } from "@/components/ui/loading"
 import DoctorSearchFilters from "@/components/doctors/DoctorSearchFilter"
 import DoctorCard from "@/components/doctors/DoctorCard"
 import DoctorPagination from "@/components/doctors/DoctorPagination"
 import NoDoctorsFound from "@/components/doctors/DoctorNotFound"
+import { DoctorService } from "@/services/doctorService"
 
 const FindDoctorPage = () => {
+  const [doctors, setDoctors] = useState<Doctor[]>([])
+  const [filteredDoctors, setFilteredDoctors] = useState<Doctor[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
   const [specialty, setSpecialty] = useState("all")
-  const [location, setLocation] = useState("all")
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
@@ -21,22 +25,60 @@ const FindDoctorPage = () => {
 
   const itemsPerPage = 4
 
+  // Fetch doctors on component mount
+  useEffect(() => {
+    const controller = new AbortController()
+    const fetchDoctors = async () => {
+      try {
+        setIsLoading(true)
+        const doctorsData = await DoctorService.getAllDoctors(controller.signal)
+        setDoctors(doctorsData)
+        setFilteredDoctors(doctorsData) // Initialize filtered doctors
+      } catch (error) {
+        if (error instanceof DOMException && error.name === "AbortError") {
+          console.log("Fetch aborted")
+        } else {
+          console.error("Error fetching doctors:", error)
+          toast.error("Failed to load doctors")
+        }
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchDoctors()
+    return () => {
+      controller.abort()
+    }
+  }, [])
+
   // Filter doctors based on search criteria
-  const filteredDoctors = mockDoctors.filter((doctor) => {
-    const matchesQuery =
-      searchQuery === "" ||
-      doctor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doctor.specialty.toLowerCase().includes(searchQuery.toLowerCase())
+  const filterDoctors = () => {
+    if (!doctors.length) return
 
-    const matchesSpecialty = specialty === "all" || doctor.specialty.toLowerCase() === specialty.toLowerCase()
+    const filtered = doctors.filter((doctor) => {
+      const matchesQuery =
+        searchQuery === "" ||
+        doctor.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        doctor.specialty?.toLowerCase().includes(searchQuery.toLowerCase())
 
-    const matchesLocation =
-      location === "all" || (doctor.address && doctor.address.toLowerCase().includes(location.toLowerCase()))
+      const matchesSpecialty = specialty === "all" || doctor.specialty?.toLowerCase() === specialty.toLowerCase()
 
-    return matchesQuery && matchesSpecialty && matchesLocation
-  })
+      // Note: availableDate filtering would require additional API call to check doctor's schedule
+      // For now, we'll just filter by name and specialty
+      return matchesQuery && matchesSpecialty
+    })
 
-  // Paginate doctors
+    setFilteredDoctors(filtered)
+    setCurrentPage(1) // Reset to first page when filtering
+  }
+
+  // Filter doctors when search criteria change
+  useEffect(() => {
+    filterDoctors()
+  }, [doctors, searchQuery, specialty, availableDate])
+
+  // Pagination
   const totalPages = Math.ceil(filteredDoctors.length / itemsPerPage)
   const paginatedDoctors = filteredDoctors.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage)
 
@@ -48,26 +90,36 @@ const FindDoctorPage = () => {
 
   const handleConfirmAppointment = () => {
     if (!selectedTimeSlot || !selectedDoctor || !selectedDate) return
-
-    alert(
-      `Appointment confirmed with ${selectedDoctor.name} on ${selectedDate.toLocaleDateString()} at ${selectedTimeSlot}`,
+    toast.success(
+      `Appointment confirmed with ${selectedDoctor.name} on ${selectedDate.toLocaleDateString("en-CA")} at ${selectedTimeSlot}`,
     )
-
-    // Reset selection
     setSelectedDoctor(null)
     setSelectedTimeSlot(null)
   }
 
   const handleSearch = () => {
-    setCurrentPage(1)
+    console.log("Search triggered with:", { searchQuery, specialty, availableDate })
+    filterDoctors()
   }
 
   const resetFilters = () => {
+    setSearchQuery("")
     setSpecialty("all")
-    setLocation("all")
     setAvailableDate(undefined)
     setActiveFilters([])
     setCurrentPage(1)
+    // Reset to show all doctors
+    setFilteredDoctors(doctors)
+  }
+
+  if (isLoading) {
+    return (
+      <Loading
+        message="Finding Available Doctors"
+        subMessage="Searching our network of healthcare professionals..."
+        variant="heartbeat"
+      />
+    )
   }
 
   return (
@@ -86,8 +138,6 @@ const FindDoctorPage = () => {
           setSearchQuery={setSearchQuery}
           specialty={specialty}
           setSpecialty={setSpecialty}
-          location={location}
-          setLocation={setLocation}
           availableDate={availableDate}
           setAvailableDate={setAvailableDate}
           activeFilters={activeFilters}
@@ -100,17 +150,17 @@ const FindDoctorPage = () => {
         <div className="mb-6">
           <p className="text-gray-600">
             {filteredDoctors.length === 0
-              ? "No doctors found"
+              ? "No doctors found matching your criteria"
               : `Showing ${paginatedDoctors.length} of ${filteredDoctors.length} doctors`}
           </p>
         </div>
 
-        {/* Doctor Listing */}
+        {/* Doctor Cards */}
         <div className="space-y-6 mb-8">
           {paginatedDoctors.length > 0 ? (
             paginatedDoctors.map((doctor) => (
               <DoctorCard
-                key={doctor.userId}
+                key={doctor.id}
                 doctor={doctor}
                 onBookAppointment={handleBookAppointment}
                 selectedDoctor={selectedDoctor}

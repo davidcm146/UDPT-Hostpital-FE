@@ -1,5 +1,5 @@
 "use client"
-import { Outlet, useLocation, useNavigate } from "react-router-dom"
+import { Navigate, Outlet, useLocation, useNavigate } from "react-router-dom"
 import {
   Sidebar,
   SidebarContent,
@@ -24,7 +24,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { BarChart3, Users, Pill, LogOut, User, Shield, Home } from "lucide-react"
+import { BarChart3, Users, Pill, LogOut, Shield, Home, Loader2 } from "lucide-react"
+import { useAuth } from "@/hooks/AuthContext"
+import { toast } from "react-toastify"
 
 const adminMenuItems = [
   {
@@ -52,10 +54,26 @@ const adminMenuItems = [
 export default function AdminLayout() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { user, logout, isLoading } = useAuth()
+
+  if (isLoading) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-center">
+          <Loader2 className="h-10 w-10 animate-spin text-teal-600 mb-4" />
+          <h2 className="text-lg font-semibold text-teal-600">Loading ...</h2>
+        </div>)
+    }
+
+  if (!user) return <Navigate to="/login" state={{ from: location }} replace />
+
+  if (user && user.role !== "DOCTOR") {
+    toast.error("You are not authorized to visit this page")
+    return <Navigate to="/" replace />
+  }
 
   const handleLogout = () => {
-    // Handle logout logic
-    navigate("/login")
+    logout();
+    navigate("/login");
   }
 
   return (
@@ -111,10 +129,6 @@ export default function AdminLayout() {
                   <DropdownMenuContent side="top" className="w-56">
                     <DropdownMenuLabel>Admin Account</DropdownMenuLabel>
                     <DropdownMenuSeparator />
-                    <DropdownMenuItem>
-                      <User className="mr-2 h-4 w-4" />
-                      Profile
-                    </DropdownMenuItem>
                     <DropdownMenuItem onClick={handleLogout}>
                       <LogOut className="mr-2 h-4 w-4" />
                       Logout

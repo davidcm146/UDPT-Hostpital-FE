@@ -38,13 +38,13 @@ export function PatientDetails({ patient, onEditPatient }: PatientDetailsProps) 
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <h4 className="text-lg font-medium">{patient.name}</h4>
-              <Badge variant="secondary">ID: {patient.userId}</Badge>
+              <Badge variant="secondary">ID: {patient.id}</Badge>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex items-center">
                 <Phone className="h-4 w-4 mr-2 text-gray-400" />
-                <span>{patient.phone}</span>
+                <span>{patient.phoneNumber}</span>
               </div>
               <div className="flex items-center">
                 <Mail className="h-4 w-4 mr-2 text-gray-400" />
@@ -54,14 +54,14 @@ export function PatientDetails({ patient, onEditPatient }: PatientDetailsProps) 
                 <Calendar className="h-4 w-4 mr-2 text-gray-400" />
                 <div>
                   <span className="text-sm text-gray-500">Date of Birth:</span>
-                  <p>{patient.DOB ? new Date(patient.DOB).toLocaleDateString("en-US") : "Not recorded"}</p>
+                  <p>{patient.dob ? new Date(patient.dob).toLocaleDateString("en-US") : "Not recorded"}</p>
                 </div>
               </div>
               <div className="flex items-center">
                 <User className="h-4 w-4 mr-2 text-gray-400" />
                 <div>
                   <span className="text-sm text-gray-500">Age & Gender:</span>
-                  <p>{calculateAge(patient.DOB)} years, {patient.gender}</p>
+                  <p>{calculateAge(patient.dob)} years, {patient.gender}</p>
                 </div>
               </div>
             </div>

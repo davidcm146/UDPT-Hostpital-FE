@@ -1,16 +1,42 @@
 "use client"
 
 import { useState } from "react"
-import { Link, Outlet, useLocation } from "react-router-dom"
+import { Link, Navigate, Outlet, useLocation } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
-import { Menu, Bell, Users, Calendar, ClipboardList, Pill, BarChart3, LogOut, User } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Menu, Bell, Users, Calendar, Pill, BarChart3, LogOut, User, Loader2 } from "lucide-react"
+import { useAuth } from "@/hooks/AuthContext"
+import { toast } from "react-toastify"
 
 const ReceptionistLayout = () => {
   const [isOpen, setIsOpen] = useState(false)
   const location = useLocation()
+  const { user, logout, isLoading } = useAuth()
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 text-center">
+        <Loader2 className="h-10 w-10 animate-spin text-teal-600 mb-4" />
+        <h2 className="text-lg font-semibold text-teal-600">Loading ...</h2>
+      </div>
+    )
+  }
+
+  if (!user) return <Navigate to="/login" state={{ from: location }} replace />
+
+  if (user && user.role !== "RECEPTIONIST") {
+    toast.error("You are not authorized to visit this page")
+    return <Navigate to="/" replace />
+  }
 
   const isActive = (path: string) => {
     return location.pathname.startsWith(path)
@@ -25,13 +51,8 @@ const ReceptionistLayout = () => {
     notifications: 5,
   }
 
-  // Navigation items
+  // Navigation items - logout button is NOT included here as requested
   const navigationItems = [
-    {
-      path: "/receptionist/dashboard",
-      label: "Dashboard",
-      icon: BarChart3,
-    },
     {
       path: "/receptionist/patients",
       label: "Patient Management",
@@ -46,11 +67,6 @@ const ReceptionistLayout = () => {
       path: "/receptionist/medicines",
       label: "Medicine Management",
       icon: Pill,
-    },
-    {
-      path: "/receptionist/profile",
-      label: "Profile",
-      icon: User,
     },
   ]
 
@@ -71,7 +87,6 @@ const ReceptionistLayout = () => {
               </Link>
               <span className="hidden md:inline-block text-gray-500">Receptionist Portal</span>
             </div>
-
             <div className="flex items-center space-x-4">
               {/* Notifications */}
               <TooltipProvider>
@@ -92,17 +107,38 @@ const ReceptionistLayout = () => {
                 </Tooltip>
               </TooltipProvider>
 
+              {/* Desktop Profile Dropdown */}
               <div className="hidden md:flex items-center">
-                <Avatar className="h-8 w-8 mr-2">
-                  <AvatarImage src={receptionist.avatar || "/placeholder.svg"} alt={receptionist.name} />
-                  <AvatarFallback className="bg-teal-600 text-white">SJ</AvatarFallback>
-                </Avatar>
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium">{receptionist.name}</span>
-                  <span className="text-xs text-gray-500">{receptionist.role}</span>
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="flex items-center space-x-2 hover:bg-gray-100">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={receptionist.avatar || "/placeholder.svg"} alt={receptionist.name} />
+                        <AvatarFallback className="bg-teal-600 text-white">SJ</AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col text-left">
+                        <span className="text-sm font-medium">{receptionist.name}</span>
+                        <span className="text-xs text-gray-500">{receptionist.role}</span>
+                      </div>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem asChild>
+                      <Link to="/receptionist/profile" className="flex items-center">
+                        <User className="mr-2 h-4 w-4" />
+                        My Profile
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={logout} className="text-red-600 focus:text-red-600">
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
 
+              {/* Mobile Menu */}
               <Sheet open={isOpen} onOpenChange={setIsOpen}>
                 <SheetTrigger asChild>
                   <Button variant="ghost" size="icon" className="md:hidden">
@@ -123,7 +159,6 @@ const ReceptionistLayout = () => {
                         </p>
                       </div>
                     </div>
-
                     <nav className="flex-1 overflow-auto py-6">
                       <ul className="space-y-2 px-2">
                         {navigationItems.map((item) => (
@@ -144,12 +179,12 @@ const ReceptionistLayout = () => {
                         ))}
                       </ul>
                     </nav>
-
+                    {/* Mobile logout button - easily accessible */}
                     <div className="p-4 border-t">
                       <Button
                         variant="outline"
-                        className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-                        onClick={() => setIsOpen(false)}
+                        className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 bg-transparent"
+                        onClick={logout}
                       >
                         <LogOut className="mr-2 h-4 w-4" />
                         Sign Out
@@ -162,7 +197,6 @@ const ReceptionistLayout = () => {
           </div>
         </div>
       </header>
-
       {/* Main Content */}
       <div className="flex min-h-[calc(100vh-64px)]">
         {/* Sidebar - Desktop Only */}
@@ -180,7 +214,6 @@ const ReceptionistLayout = () => {
                 </p>
               </div>
             </div>
-
             <nav className="flex-1 overflow-auto py-6">
               <ul className="space-y-2 px-2">
                 {navigationItems.map((item) => (
@@ -198,19 +231,8 @@ const ReceptionistLayout = () => {
                 ))}
               </ul>
             </nav>
-
-            <div className="p-4 border-t">
-              <Button
-                variant="outline"
-                className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Sign Out
-              </Button>
-            </div>
           </div>
         </aside>
-
         {/* Main Content */}
         <main className="flex-1 p-6">
           <div className="container mx-auto">

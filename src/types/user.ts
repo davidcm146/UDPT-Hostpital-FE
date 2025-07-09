@@ -1,13 +1,15 @@
 export interface User {
-    userId: string // uuid
+    id: string // uuid
     name: string // varchar
     address: string // text
     email: string
-    DOB: Date | string // int
+    dob: Date | string // int
     password: string
-    avatar: string
-    phone: string
-    role: "Doctor" | "Receptionist" | "Patient" | "Admin"
+    avatar?: string
+    phoneNumber?: string
+    role: Role
     createdAt: Date | string
     updatedAt: Date | string
 }
+
+export type Role = "ADMIN" | "DOCTOR" | "PATIENT" | "RECEPTIONIST"

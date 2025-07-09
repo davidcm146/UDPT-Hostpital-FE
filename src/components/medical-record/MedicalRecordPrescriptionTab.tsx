@@ -1,40 +1,98 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
-import { FileText, Pill } from "lucide-react"
-import { PrescriptionDetailsDialog } from "../prescription/PrescriptionDetailsDialog"
-import type { PrescriptionWithDetails } from "@/types/prescription"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { FileText, Pill, Loader2, AlertCircle } from "lucide-react"
+import { PrescriptionService } from "@/services/prescriptionService"
+import type { Prescription } from "@/types/prescription"
 
 interface MedicalRecordPrescriptionTabProps {
-  prescriptions: PrescriptionWithDetails[]
+  medicalRecordId: string
 }
 
-export function MedicalRecordPrescriptionTab({ prescriptions }: MedicalRecordPrescriptionTabProps) {
-  const [selectedPrescription, setSelectedPrescription] = useState<PrescriptionWithDetails | null>(null)
-  const [dialogOpen, setDialogOpen] = useState(false)
+export function MedicalRecordPrescriptionTab({ medicalRecordId }: MedicalRecordPrescriptionTabProps) {
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchPrescriptions = async () => {
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        const data = await PrescriptionService.getPrescriptionsByMedicalRecord(medicalRecordId)
+        setPrescriptions(data)
+      } catch (err) {
+        console.error("Failed to fetch prescriptions:", err)
+        setError("Failed to load prescriptions. Please try again.")
+        setPrescriptions([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    if (medicalRecordId) {
+      fetchPrescriptions()
+    }
+  }, [medicalRecordId])
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "active":
+      case "TAKEN":
         return "bg-green-100 text-green-800"
-      case "pending":
+      case "NOT_TAKEN":
         return "bg-yellow-100 text-yellow-800"
-      case "completed":
-        return "bg-blue-100 text-blue-800"
-      case "cancelled":
-        return "bg-red-100 text-red-800"
       default:
         return "bg-gray-100 text-gray-800"
     }
   }
 
-  const handleViewPrescription = (prescription: PrescriptionWithDetails) => {
-    setSelectedPrescription(prescription)
-    setDialogOpen(true)
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case "TAKEN":
+        return "Completed"
+      case "NOT_TAKEN":
+        return "Pending"
+      default:
+        return status
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Prescriptions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-teal-600 mr-2" />
+            <span className="text-gray-600">Loading prescriptions...</span>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Prescriptions</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    )
   }
 
   if (prescriptions.length === 0) {
@@ -59,91 +117,77 @@ export function MedicalRecordPrescriptionTab({ prescriptions }: MedicalRecordPre
   }
 
   return (
-    <>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Prescriptions ({prescriptions.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-6">
-            {prescriptions.map((prescription) => (
-              <div key={prescription.id} className="border rounded-lg p-4">
-                <div className="flex justify-between items-start mb-4">
-                  <div>
-                    <h4 className="font-medium">Prescription ID: {prescription.id}</h4>
-                    <p className="text-sm text-gray-500">
-                      Issued: {new Date(prescription.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <Badge className={getStatusColor(prescription.status)}>
-                    {prescription.status.charAt(0).toUpperCase() + prescription.status.slice(1)}
-                  </Badge>
-                </div>
-
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">Prescriptions ({prescriptions.length})</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-6">
+          {prescriptions.map((prescription) => (
+            <div key={prescription.id} className="border rounded-lg p-4">
+              <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h5 className="font-medium mb-3">Medications ({prescription.details?.length})</h5>
-                  <div className="space-y-3">
-                    {prescription.details?.slice(0, 2).map((detail) => (
-                      <div key={detail.id} className="flex justify-between items-start p-3 bg-gray-50 rounded-lg">
-                        <div className="flex-1">
-                          <h6 className="font-medium text-teal-700">{detail.medicine.name}</h6>
-                          <p className="text-sm text-gray-600 mb-1">{detail.medicine.description}</p>
-                          <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                              <span className="font-medium text-gray-500">Dosage:</span> {detail.dosage}mg
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-500">Quantity:</span> {detail.quantity}
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-500">Form:</span> {detail.medicine.dosageForm}
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-500">Strength:</span> {detail.medicine.strength}
-                            </div>
-                          </div>
-                          {detail.note && (
-                            <div className="mt-2">
-                              <span className="font-medium text-gray-500 text-sm">Instructions:</span>
-                              <p className="text-sm mt-1 text-gray-700">{detail.note}</p>
-                            </div>
-                          )}
+                  <h4 className="font-medium">Prescription ID: {prescription.id}</h4>
+                  <p className="text-sm text-gray-500">
+                    Issued:{" "}
+                    {new Date(prescription.createdAt).toLocaleDateString("en-US", {
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </p>
+                </div>
+                <Badge className={getStatusColor(prescription.status)}>{getStatusLabel(prescription.status)}</Badge>
+              </div>
+
+              <div className="space-y-3">
+                <div className="p-3 bg-gray-50 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h6 className="font-medium text-teal-700">Prescription Details</h6>
+                      <p className="text-sm text-gray-600 mt-1">
+                        This prescription contains medications prescribed by the doctor.
+                      </p>
+                      <div className="grid grid-cols-2 gap-4 text-sm mt-2">
+                        <div>
+                          <span className="font-medium text-gray-500">Patient ID:</span> {prescription.patientId}
                         </div>
-                        <div className="text-right ml-4">
-                          <p className="font-semibold">
-                            ${Number(detail.subTotal || 0).toFixed(2)}
-                          </p>
+                        <div>
+                          <span className="font-medium text-gray-500">Doctor ID:</span> {prescription.doctorId}
                         </div>
                       </div>
-                    ))}
-                    {prescription.details?.length > 2 && (
-                      <p className="text-sm text-gray-500 text-center">
-                        +{prescription.details?.length - 2} more medications
-                      </p>
-                    )}
-                  </div>
-                </div>
-
-                <Separator className="my-4" />
-
-                <div className="flex justify-between items-center">
-                  <div>
-                    <span className="font-medium text-lg">Total: ${prescription.totalPrice.toFixed(2)}</span>
-                  </div>
-                  <div className="flex space-x-2">
-                    <Button variant="outline" onClick={() => handleViewPrescription(prescription)}>
-                      <FileText className="mr-2 h-4 w-4" />
-                      View Details
-                    </Button>
+                    </div>
+                    <div className="text-right ml-4">
+                      <p className="font-semibold text-lg">${prescription.totalPrice.toFixed(2)}</p>
+                      <p className="text-sm text-gray-500">Total Amount</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
 
-      <PrescriptionDetailsDialog open={dialogOpen} onOpenChange={setDialogOpen} prescription={selectedPrescription} />
-    </>
+              <Separator className="my-4" />
+
+              <div className="flex justify-between items-center">
+                <div>
+                  <span className="font-medium text-lg">Total: ${prescription.totalPrice.toFixed(2)}</span>
+                  <p className="text-sm text-gray-500">
+                    Status: {getStatusLabel(prescription.status)} • Updated:{" "}
+                    {new Date(prescription.updatedAt).toLocaleDateString()}
+                  </p>
+                </div>
+                <div className="flex space-x-2">
+                  <Button variant="outline" size="sm">
+                    <FileText className="mr-2 h-4 w-4" />
+                    View Details
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   )
 }

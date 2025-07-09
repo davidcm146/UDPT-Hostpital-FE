@@ -11,7 +11,7 @@ export function PatientManagementStats() {
   const currentMonth = new Date().getMonth()
   const currentYear = new Date().getFullYear()
   const newPatientsThisMonth = mockDoctorPatients.filter((patient) => {
-    const registrationDate = new Date(patient.registrationDate ? patient.registrationDate : "")
+    const registrationDate = new Date(patient.createdAt ? patient.createdAt : "")
     return registrationDate.getMonth() === currentMonth && registrationDate.getFullYear() === currentYear
   }).length
 
@@ -19,18 +19,10 @@ export function PatientManagementStats() {
   const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1
   const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear
   const newPatientsLastMonth = mockDoctorPatients.filter((patient) => {
-    const registrationDate = new Date(patient.registrationDate ? patient.registrationDate : "")
+    const registrationDate = new Date(patient.createdAt ? patient.createdAt : "")
     return registrationDate.getMonth() === lastMonth && registrationDate.getFullYear() === lastMonthYear
   }).length
 
-  // Calculate active patients (visited in last 30 days)
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
-  const activePatients = mockDoctorPatients.filter(
-    (patient) => patient.lastVisitDate && new Date(patient.lastVisitDate) > thirtyDaysAgo,
-  ).length
-
-  // Calculate inactive patients
-  const inactivePatients = totalPatients - activePatients
 
   // Calculate growth percentages
   const newPatientGrowth =
@@ -40,7 +32,6 @@ export function PatientManagementStats() {
     {
       title: "Total Patients",
       value: totalPatients.toString(),
-      description: `${((activePatients / totalPatients) * 100).toFixed(1)}% active`,
       icon: Users,
       trend: "up",
       color: "text-blue-600",
@@ -52,22 +43,6 @@ export function PatientManagementStats() {
       icon: UserPlus,
       trend: newPatientGrowth >= 0 ? "up" : "down",
       color: "text-green-600",
-    },
-    {
-      title: "Active Patients",
-      value: activePatients.toString(),
-      description: "Visited in last 30 days",
-      icon: UserCheck,
-      trend: "up",
-      color: "text-purple-600",
-    },
-    {
-      title: "Inactive Patients",
-      value: inactivePatients.toString(),
-      description: "No recent visits",
-      icon: UserX,
-      trend: "down",
-      color: "text-orange-600",
     },
   ]
 

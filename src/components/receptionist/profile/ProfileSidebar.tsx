@@ -23,7 +23,7 @@ export function ProfileSidebar({ receptionist }: ProfileSidebarProps) {
         </Avatar>
         <h2 className="text-xl font-bold text-center">{receptionist.name}</h2>
         <p className="text-gray-500">{receptionist.department}</p>
-        <p className="text-sm text-gray-500 mt-2">Staff ID: {receptionist.userId.substring(0, 8)}...</p>
+        <p className="text-sm text-gray-500 mt-2">Staff ID: {receptionist.id.substring(0, 8)}...</p>
       </div>
 
       <div className="border-t border-gray-200 pt-4 mt-2">

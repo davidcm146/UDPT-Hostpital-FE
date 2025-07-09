@@ -42,8 +42,6 @@ const DoctorsSection = () => {
                       </div>
                     </div>
                   </div>
-
-                  <Button className="w-full bg-teal-600 hover:bg-teal-700 mt-auto">Book Appointment</Button>
                 </CardContent>
               </Card>
             ))}

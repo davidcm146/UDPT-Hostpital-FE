@@ -5,11 +5,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ClipboardList, Pill } from "lucide-react"
 import type { MedicalRecord } from "@/types/medical-record"
-import type { Prescription } from "@/types/prescription"
 import { MedicalRecordDetailsTab } from "./MedicalRecordDetailsTab"
 import { MedicalRecordPrescriptionTab } from "./MedicalRecordPrescriptionTab"
 import { formatDate } from "@/lib/DateTimeUtils"
-import { getPrescriptionsByMedicalRecord } from "@/data/prescription"
 
 interface MedicalRecordDetailsDialogProps {
   open: boolean
@@ -33,12 +31,9 @@ export function MedicalRecordDetailsDialog({
     return null
   }
 
-  // Fetch prescriptions for this record (mock data)
-  const prescriptions: Prescription[] = getPrescriptionsByMedicalRecord(medicalRecord.id)
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:min-w-6xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-6xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center">
@@ -59,7 +54,7 @@ export function MedicalRecordDetailsDialog({
             </TabsTrigger>
             <TabsTrigger value="prescription" className="flex items-center">
               <Pill className="mr-2 h-4 w-4" />
-              Prescription ({prescriptions.length})
+              Prescriptions
             </TabsTrigger>
           </TabsList>
 
@@ -68,7 +63,7 @@ export function MedicalRecordDetailsDialog({
           </TabsContent>
 
           <TabsContent value="prescription">
-            <MedicalRecordPrescriptionTab prescriptions={prescriptions} />
+            <MedicalRecordPrescriptionTab medicalRecordId={medicalRecord.id} />
           </TabsContent>
         </Tabs>
       </DialogContent>

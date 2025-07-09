@@ -25,24 +25,24 @@ import {
   faBell,
 } from "@fortawesome/free-solid-svg-icons"
 import { Calendar } from "lucide-react"
+import { useAuth } from "@/hooks/AuthContext"
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false)
-  const [isLoggedIn, setIsLoggedIn] = useState(true) // Change this based on your auth state
-  const [notificationCount, setNotificationCount] = useState(3) // Mock notification count
+  const [notificationCount, setNotificationCount] = useState(3)
   const location = useLocation()
 
-  const isActive = (path: string) => {
-    return location.pathname === path
-  }
+  const { user, logout } = useAuth();
+  // console.log(token);
+  const isLoggedIn = !!user
+
+  const isActive = (path: string) => location.pathname === path
 
   const handleLogout = () => {
-    // Add your logout logic here
-    setIsLoggedIn(false)
+    logout()
   }
 
   const handleNotificationClick = () => {
-    // Add your notification logic here
     console.log("Notifications clicked")
   }
 
@@ -195,7 +195,7 @@ const Navbar = () => {
                   </Link>
 
                   {/* Mobile User Menu Items (when logged in) */}
-                  {isLoggedIn && (
+                  {!isLoggedIn && (
                     <>
                       <div className="border-t border-gray-200 my-2"></div>
 

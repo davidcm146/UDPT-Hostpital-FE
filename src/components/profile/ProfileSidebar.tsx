@@ -19,7 +19,7 @@ export function ProfileSidebar({ patientData, isEditing }: ProfileSidebarProps) 
           <Avatar className="h-28 w-28 border border-gray-300 shadow-sm">
             <AvatarImage src={patientData.avatar || "/placeholder.svg?height=112&width=112"} alt="Profile" />
             <AvatarFallback className="text-2xl font-semibold text-teal-700 bg-teal-100">
-              {patientData.name
+              {patientData?.name
                 .split(" ")
                 .map((n) => n[0])
                 .join("")}
@@ -42,7 +42,7 @@ export function ProfileSidebar({ patientData, isEditing }: ProfileSidebarProps) 
         {/* Medical Record */}
         <div className="flex items-center space-x-2 text-gray-600 mb-4">
           <IdCard className="h-4 w-4 text-gray-400" />
-          <span className="text-sm">{patientData.userId}</span>
+          <span className="text-sm">{patientData.id}</span>
         </div>
 
         <Separator className="my-3" />

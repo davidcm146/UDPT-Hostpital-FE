@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge"
 import { Calendar, FileText, Pill, Eye, Plus } from "lucide-react"
 import type { MedicalRecord } from "@/types/medical-record"
 import { getVisitTypeColor } from "@/lib/MedicalRecordUtils"
+import { formatDate } from "@/lib/DateTimeUtils"
 
 interface MedicalRecordCardProps {
   record: MedicalRecord
@@ -45,7 +46,7 @@ export function MedicalRecordCard({
       <CardContent className="space-y-3">
         <div className="flex items-center text-sm text-gray-600">
           <Calendar className="h-4 w-4 mr-2" />
-          <span>Visit Date: {record.visitDate.toLocaleDateString()}</span>
+          <span>Visit Date: {formatDate(record.visitDate)}</span>
         </div>
 
         <div>

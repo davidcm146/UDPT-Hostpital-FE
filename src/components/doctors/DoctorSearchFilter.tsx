@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,7 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Calendar } from "@/components/ui/calendar"
-import { Search, CalendarIcon, Building, Stethoscope } from "lucide-react"
+import { Search, CalendarIcon, Stethoscope } from "lucide-react"
 import { format } from "date-fns"
 
 // Specialty options
@@ -25,16 +27,9 @@ export const specialties = [
   { value: "orthopedics", label: "Orthopedics" },
   { value: "dermatology", label: "Dermatology" },
   { value: "gastroenterology", label: "Gastroenterology" },
-]
-
-// Location options
-export const locations = [
-  { value: "all", label: "All Locations" },
-  { value: "main", label: "Main Hospital" },
-  { value: "west", label: "West Wing" },
-  { value: "east", label: "East Wing" },
-  { value: "children", label: "Children's Center" },
-  { value: "medical-arts", label: "Medical Arts Building" },
+  { value: "general practice", label: "General Practice" },
+  { value: "internal medicine", label: "Internal Medicine" },
+  { value: "surgery", label: "Surgery" },
 ]
 
 interface DoctorSearchFiltersProps {
@@ -42,8 +37,6 @@ interface DoctorSearchFiltersProps {
   setSearchQuery: (query: string) => void
   specialty: string
   setSpecialty: (specialty: string) => void
-  location: string
-  setLocation: (location: string) => void
   availableDate: Date | undefined
   setAvailableDate: (date: Date | undefined) => void
   activeFilters: string[]
@@ -57,8 +50,6 @@ const DoctorSearchFilters = ({
   setSearchQuery,
   specialty,
   setSpecialty,
-  location,
-  setLocation,
   availableDate,
   setAvailableDate,
   activeFilters,
@@ -66,23 +57,52 @@ const DoctorSearchFilters = ({
   onSearch,
   onResetFilters,
 }: DoctorSearchFiltersProps) => {
+  // Update active filters when specialty or date changes
   useEffect(() => {
     const filters = []
-
     if (specialty !== "all") {
-      filters.push(`Specialty: ${specialties.find((s) => s.value === specialty)?.label}`)
+      const specialtyLabel = specialties.find((s) => s.value === specialty)?.label
+      if (specialtyLabel) {
+        filters.push(`Specialty: ${specialtyLabel}`)
+      }
     }
-
-    if (location !== "all") {
-      filters.push(`Location: ${locations.find((l) => l.value === location)?.label}`)
-    }
-
     if (availableDate) {
       filters.push(`Available: ${format(availableDate, "PPP")}`)
     }
-
     setActiveFilters(filters)
-  }, [specialty, location, availableDate, setActiveFilters])
+  }, [specialty, availableDate, setActiveFilters])
+
+  // Handle search input with Enter key
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      onSearch()
+    }
+  }
+
+  // Handle specialty selection
+  const handleSpecialtySelect = (value: string) => {
+    setSpecialty(value)
+    // Auto-trigger search when specialty changes
+    setTimeout(() => onSearch(), 0)
+  }
+
+  // Handle date selection
+  const handleDateSelect = (date: Date | undefined) => {
+    setAvailableDate(date)
+    // Auto-trigger search when date changes
+    setTimeout(() => onSearch(), 0)
+  }
+
+  // Clear individual filter
+  const clearSpecialtyFilter = () => {
+    setSpecialty("all")
+    setTimeout(() => onSearch(), 0)
+  }
+
+  const clearDateFilter = () => {
+    setAvailableDate(undefined)
+    setTimeout(() => onSearch(), 0)
+  }
 
   return (
     <div className="bg-white p-6 rounded-xl shadow-md mb-8">
@@ -94,7 +114,8 @@ const DoctorSearchFilters = ({
             placeholder="Search by doctor name or specialty"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10"
+            onKeyPress={handleKeyPress}
+            className="w-full pl-10 h-11"
           />
           <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
             <Search className="h-4 w-4 text-gray-400" />
@@ -104,9 +125,9 @@ const DoctorSearchFilters = ({
         {/* Specialty Filter Dropdown */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="w-full md:w-auto">
+            <Button variant="outline" className="w-full md:w-auto h-11 bg-transparent">
               <Stethoscope className="mr-2 h-4 w-4 text-gray-500" />
-              Specialty
+              {specialty === "all" ? "Specialty" : specialties.find((s) => s.value === specialty)?.label}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56">
@@ -116,32 +137,10 @@ const DoctorSearchFilters = ({
               <DropdownMenuItem
                 key={item.value}
                 className={specialty === item.value ? "bg-muted" : ""}
-                onClick={() => setSpecialty(item.value)}
+                onClick={() => handleSpecialtySelect(item.value)}
               >
                 {item.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
-
-        {/* Location Filter Dropdown */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="w-full md:w-auto">
-              <Building className="mr-2 h-4 w-4 text-gray-500" />
-              Location
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-56">
-            <DropdownMenuLabel>Select Location</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {locations.map((item) => (
-              <DropdownMenuItem
-                key={item.value}
-                className={location === item.value ? "bg-muted" : ""}
-                onClick={() => setLocation(item.value)}
-              >
-                {item.label}
+                {specialty === item.value && <span className="ml-auto">✓</span>}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
@@ -150,15 +149,21 @@ const DoctorSearchFilters = ({
         {/* Date Filter Dropdown */}
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="w-full md:w-auto">
+            <Button variant="outline" className="w-full md:w-auto h-11 bg-transparent">
               <CalendarIcon className="mr-2 h-4 w-4 text-gray-500" />
               {availableDate ? format(availableDate, "PP") : "Available Date"}
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
-            <Calendar mode="single" selected={availableDate} onSelect={setAvailableDate} initialFocus />
+            <Calendar
+              mode="single"
+              selected={availableDate}
+              onSelect={handleDateSelect}
+              initialFocus
+              disabled={(date) => date < new Date()}
+            />
             <div className="p-3 border-t border-border">
-              <Button variant="outline" className="w-full" onClick={() => setAvailableDate(undefined)}>
+              <Button variant="outline" className="w-full bg-transparent" onClick={clearDateFilter}>
                 Clear Date
               </Button>
             </div>
@@ -166,7 +171,7 @@ const DoctorSearchFilters = ({
         </Popover>
 
         {/* Search Button */}
-        <Button className="bg-teal-600 hover:bg-teal-700 w-full md:w-auto" onClick={onSearch}>
+        <Button className="bg-teal-600 hover:bg-teal-700 w-full md:w-auto h-11" onClick={onSearch}>
           <Search className="mr-2 h-4 w-4" />
           Search
         </Button>
@@ -176,18 +181,32 @@ const DoctorSearchFilters = ({
       {activeFilters.length > 0 && (
         <div className="mt-4 flex flex-wrap items-center gap-2">
           <span className="text-sm text-gray-500">Active filters:</span>
-          {activeFilters.map((filter, index) => (
-            <span
-              key={index}
-              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800"
-            >
-              {filter}
-            </span>
-          ))}
+          {activeFilters.map((filter, index) => {
+            const isSpecialtyFilter = filter.startsWith("Specialty:")
+            const isDateFilter = filter.startsWith("Available:")
+
+            return (
+              <div
+                key={index}
+                className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-teal-100 text-teal-800 gap-1"
+              >
+                <span>{filter}</span>
+                <button
+                  onClick={() => {
+                    if (isSpecialtyFilter) clearSpecialtyFilter()
+                    if (isDateFilter) clearDateFilter()
+                  }}
+                  className="ml-1 hover:bg-teal-200 rounded-full p-0.5"
+                >
+                  ×
+                </button>
+              </div>
+            )
+          })}
           <Button
             variant="ghost"
             size="sm"
-            className="text-sm text-red-600 hover:text-red-800"
+            className="text-sm text-red-600 hover:text-red-800 hover:bg-red-50"
             onClick={onResetFilters}
           >
             Clear all

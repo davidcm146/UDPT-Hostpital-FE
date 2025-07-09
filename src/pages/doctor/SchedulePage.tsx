@@ -1,5 +1,3 @@
-"use client"
-
 import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Clock, Calendar, CalendarDays } from "lucide-react"
@@ -11,8 +9,8 @@ const DoctorSchedulePage = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
   const [activeTab, setActiveTab] = useState("today")
 
-  // Mock current doctor ID - in real app this would come from authentication
-  const currentDoctorID = "550e8400-e29b-41d4-a716-446655440001"
+  // In a real app, this would come from authentication context
+  const currentDoctorID = "fde7f72c-3156-4a00-95ae-873600eb2798"
 
   return (
     <div className="min-h-screen bg-gray-50">

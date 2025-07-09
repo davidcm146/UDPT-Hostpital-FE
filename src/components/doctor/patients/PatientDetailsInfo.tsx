@@ -47,7 +47,7 @@ export const PatientDetailsInfo = ({ patient }: PatientDetailsInfoProps) => {
                                 <Calendar className="h-4 w-4 text-gray-400 mr-2" />
                                 <span className="font-medium">Age:</span>
                                 <span className="ml-2">
-                                    {patient?.DOB ? `${calculateAge(patient.DOB)} years old` : "N/A"}
+                                    {patient?.dob ? `${calculateAge(patient.dob)} years old` : "N/A"}
                                 </span>
                             </div>
                             <div className="flex items-center">
@@ -65,7 +65,7 @@ export const PatientDetailsInfo = ({ patient }: PatientDetailsInfoProps) => {
                             <div className="flex items-center">
                                 <Phone className="h-4 w-4 text-gray-400 mr-2" />
                                 <span className="font-medium">Phone:</span>
-                                <span className="ml-2">{patient?.phone}</span>
+                                <span className="ml-2">{patient?.phoneNumber}</span>
                             </div>
                             <div className="flex items-center">
                                 <Mail className="h-4 w-4 text-gray-400 mr-2" />

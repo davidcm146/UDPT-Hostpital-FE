@@ -22,7 +22,7 @@ export function AppointmentList({ appointments, emptyMessage, onEdit, onDecline 
     <div className="space-y-3">
       {appointments.map((appointment) => (
         <AppointmentCard
-          key={appointment.appointmentID}
+          key={appointment.id}
           appointment={appointment}
           onEdit={onEdit}
           onDecline={onDecline}

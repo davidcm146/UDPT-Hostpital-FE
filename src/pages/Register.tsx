@@ -1,39 +1,80 @@
-import type React from "react"
-
+import { useForm } from "react-hook-form"
 import { useState } from "react"
-import { Link } from "react-router-dom"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { useLocation, useNavigate } from "react-router-dom"
 import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card"
+import { LoadingButton } from "@/components/ui/loading-button"
+import { toast } from "react-toastify"
+import { authService } from "@/services/authService"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import { faUser, faEnvelope, faLock, faIdCard, faEyeSlash, faEye } from "@fortawesome/free-solid-svg-icons"
+import { faEnvelope, faEye, faEyeSlash, faLock, faUser } from "@fortawesome/free-solid-svg-icons"
+import { useAuth } from "@/hooks/AuthContext"
+
+type RegisterForm = {
+  name: string
+  email: string
+  password: string
+  confirmPassword: string
+}
 
 export default function RegisterPage() {
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
-    agreeTerms: false,
-  })
+  const location = useLocation()
+  const params = new URLSearchParams(location.search)
+  const redirectPath = params.get("redirect") || "/"
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
-  }
+  const navigate = useNavigate()
+  const { login } = useAuth()
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleCheckboxChange = (checked: boolean) => {
-    setFormData((prev) => ({ ...prev, agreeTerms: checked }))
-  }
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors },
+    setError,
+    clearErrors,
+  } = useForm<RegisterForm>()
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // In a real application, you would handle registration here
-    console.log("Registration submitted:", formData)
+  const password = watch("password")
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+  const onSubmit = async (data: RegisterForm) => {
+    if (data.password !== data.confirmPassword) {
+      setError("confirmPassword", {
+        type: "manual",
+        message: "Passwords do not match",
+      })
+      return
+    }
+
+    clearErrors("confirmPassword")
+    setIsLoading(true)
+
+    try {
+      const res = await authService.register({
+        name: data.name,
+        email: data.email,
+        password: data.password,
+      })
+
+      if (res.success) {
+        toast.success(`Welcome, ${data.name}!`)
+        try {
+          await login(data.email, data.password)
+          navigate(redirectPath, { replace: true })
+        } catch (err: any) {
+          toast.error("Auto login failed. Please login manually.")
+          navigate("/login")
+        }
+      } else {
+        toast.error(res.message)
+      }
+    } catch (error: any) {
+      toast.error(error.message || "Registration failed")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -44,148 +85,134 @@ export default function RegisterPage() {
           <CardDescription>Sign up to get started with ABC Hospital</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label htmlFor="firstName" className="text-sm font-medium">
-                  First Name
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+            {/* Name */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label htmlFor="name" className="text-sm font-medium">
+                  Full Name
                 </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <FontAwesomeIcon icon={faUser} className="text-gray-400" />
-                  </div>
-                  <Input
-                    id="firstName"
-                    name="firstName"
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    placeholder="John"
-                    className="pl-10"
-                    required
-                  />
-                </div>
               </div>
-              <div className="space-y-2">
-                <label htmlFor="lastName" className="text-sm font-medium">
-                  Last Name
-                </label>
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                    <FontAwesomeIcon icon={faIdCard} className="text-gray-400" />
-                  </div>
-                  <Input
-                    id="lastName"
-                    name="lastName"
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    placeholder="Doe"
-                    className="pl-10"
-                    required
-                  />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <FontAwesomeIcon icon={faUser} className="text-gray-400" />
                 </div>
+                <Input
+                  placeholder="David Junior"
+                  className="pl-10"
+                  {...register("name", { required: "Name is required" })}
+                />
               </div>
+              {errors.name && <p className="text-red-500 text-sm mt-1">{errors.name.message}</p>}
             </div>
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">
-                Email Address
-              </label>
+
+            {/* Email */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label htmlFor="email" className="text-sm font-medium">
+                  Email
+                </label>
+              </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                   <FontAwesomeIcon icon={faEnvelope} className="text-gray-400" />
                 </div>
                 <Input
-                  id="email"
-                  name="email"
                   type="email"
-                  value={formData.email}
-                  onChange={handleChange}
-                  placeholder="name@example.com"
                   className="pl-10"
-                  required
+                  placeholder="name@example.com"
+                  {...register("email", {
+                    required: "Email is required",
+                    pattern: {
+                      value: /^\S+@\S+$/i,
+                      message: "Invalid email format",
+                    },
+                  })}
                 />
               </div>
+              {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
             </div>
-            <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
-                Password
-              </label>
+
+            {/* Password */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label htmlFor="password" className="text-sm font-medium">
+                  Password
+                </label>
+              </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                   <FontAwesomeIcon icon={faLock} className="text-gray-400" />
                 </div>
                 <Input
-                  id="password"
-                  name="password"
                   type={showPassword ? "text" : "password"}
-                  value={formData.password}
-                  onChange={handleChange}
                   placeholder="••••••••"
-                  className="pl-10"
-                  required
+                  className="pl-10 pr-10"
+                  {...register("password", {
+                    required: "Password is required",
+                    minLength: {
+                      value: 6,
+                      message: "Password must be at least 6 characters",
+                    },
+                  })}
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
                 >
                   <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
                 </button>
               </div>
+              {errors.password && <p className="text-red-500 text-sm mt-1">{errors.password.message}</p>}
             </div>
-            <div className="space-y-2">
-              <label htmlFor="confirmPassword" className="text-sm font-medium">
-                Confirm Password
-              </label>
+
+            {/* Confirm Password */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label htmlFor="confirmPassword" className="text-sm font-medium">
+                  Confirm Password
+                </label>
+              </div>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                   <FontAwesomeIcon icon={faLock} className="text-gray-400" />
                 </div>
                 <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
                   placeholder="••••••••"
-                  className="pl-10"
-                  required
+                  className="pl-10 pr-10"
+                  {...register("confirmPassword", {
+                    required: "Please confirm your password",
+                  })}
                 />
                 <button
                   type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500"
                 >
                   <FontAwesomeIcon icon={showConfirmPassword ? faEyeSlash : faEye} />
                 </button>
               </div>
+              {errors.confirmPassword && <p className="text-red-500 text-sm mt-1">{errors.confirmPassword.message}</p>}
             </div>
-            <div className="flex items-center space-x-2">
-              <Checkbox id="agreeTerms" checked={formData.agreeTerms} onCheckedChange={handleCheckboxChange} required />
-              <label
-                htmlFor="agreeTerms"
-                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                I agree to the{" "}
-                <Link to="/terms" className="text-teal-600 hover:text-teal-700">
-                  Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link to="/privacy" className="text-teal-600 hover:text-teal-700">
-                  Privacy Policy
-                </Link>
-              </label>
-            </div>
-            <Button type="submit" className="w-full bg-teal-600 hover:bg-teal-700">
+
+            <LoadingButton
+              type="submit"
+              className="w-full bg-teal-600 hover:bg-teal-700"
+              loading={isLoading}
+              loadingText="Creating Account..."
+            >
               Create Account
-            </Button>
+            </LoadingButton>
           </form>
         </CardContent>
-        <CardFooter className="flex justify-center">
-          <p className="text-sm text-gray-600">
+        <CardFooter className="justify-center">
+          <p className="text-sm">
             Already have an account?{" "}
-            <Link to="/login" className="text-teal-600 hover:text-teal-700 font-medium">
+            <a href="/login" className="text-teal-600 hover:text-teal-700 font-medium">
               Sign in
-            </Link>
+            </a>
           </p>
         </CardFooter>
       </Card>

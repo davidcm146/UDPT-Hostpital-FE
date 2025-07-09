@@ -32,6 +32,7 @@ export function PersonalInformation({ patientData, isEditing, onChange }: Person
                 <Input
                   id="name"
                   value={patientData.name}
+                  className="mt-2"
                   onChange={(e) => handleFieldChange("name", e.target.value)}
                 />
               ) : (
@@ -43,13 +44,15 @@ export function PersonalInformation({ patientData, isEditing, onChange }: Person
             </div>
 
             {/* Age (chỉ hiển thị, không chỉnh sửa trực tiếp) */}
-            <div>
-              <Label htmlFor="age">Age</Label>
-              <div className="flex items-center mt-1">
-                <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                <span>{calculateAge(patientData.DOB)} years old</span>
+            {!isEditing && (
+              <div>
+                <Label htmlFor="age">Age</Label>
+                <div className="flex items-center mt-1">
+                  <Calendar className="h-4 w-4 text-gray-400 mr-2" />
+                  <span>{calculateAge(patientData.dob)} years old</span>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Date of Birth */}
             <div>
@@ -58,13 +61,14 @@ export function PersonalInformation({ patientData, isEditing, onChange }: Person
                 <Input
                   id="dateOfBirth"
                   type="date"
-                  value={patientData.DOB ? new Date(patientData.DOB).toISOString().split("T")[0] : ""}
-                  onChange={(e) => handleFieldChange("DOB", e.target.value)}
+                  className="mt-2"
+                  value={patientData.dob ? new Date(patientData.dob).toISOString().split("T")[0] : ""}
+                  onChange={(e) => handleFieldChange("dob", e.target.value)}
                 />
               ) : (
                 <div className="flex items-center mt-1">
                   <Calendar className="h-4 w-4 text-gray-400 mr-2" />
-                  <span>{patientData.DOB && new Date(patientData.DOB).toLocaleDateString()}</span>
+                  <span>{patientData.dob && new Date(patientData.dob).toLocaleDateString()}</span>
                 </div>
               )}
             </div>
@@ -75,7 +79,7 @@ export function PersonalInformation({ patientData, isEditing, onChange }: Person
               {isEditing ? (
                 <select
                   id="gender"
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  className="flex h-10 mt-2 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                   value={patientData.gender}
                   onChange={(e) => handleFieldChange("gender", e.target.value)}
                 >
@@ -102,6 +106,7 @@ export function PersonalInformation({ patientData, isEditing, onChange }: Person
                   id="email"
                   type="email"
                   value={patientData.email}
+                  className="mt-2"
                   onChange={(e) => handleFieldChange("email", e.target.value)}
                 />
               ) : (
@@ -118,13 +123,14 @@ export function PersonalInformation({ patientData, isEditing, onChange }: Person
               {isEditing ? (
                 <Input
                   id="phone"
-                  value={patientData.phone}
-                  onChange={(e) => handleFieldChange("phone", e.target.value)}
+                  value={patientData.phoneNumber}
+                  className="mt-2"
+                  onChange={(e) => handleFieldChange("phoneNumber", e.target.value)}
                 />
               ) : (
                 <div className="flex items-center mt-1">
                   <Phone className="h-4 w-4 text-gray-400 mr-2" />
-                  <span>{patientData.phone}</span>
+                  <span>{patientData.phoneNumber}</span>
                 </div>
               )}
             </div>
@@ -136,6 +142,7 @@ export function PersonalInformation({ patientData, isEditing, onChange }: Person
                 <Input
                   id="address"
                   value={patientData.address}
+                  className="mt-2"
                   onChange={(e) => handleFieldChange("address", e.target.value)}
                 />
               ) : (
@@ -153,6 +160,7 @@ export function PersonalInformation({ patientData, isEditing, onChange }: Person
                 <Input
                   id="occupation"
                   value={patientData.occupation}
+                  className="mt-2"
                   onChange={(e) => handleFieldChange("occupation", e.target.value)}
                 />
               ) : (

@@ -3,8 +3,10 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CalendarPlus, Calendar } from "lucide-react"
+import { useNavigate } from "react-router-dom"
 
 export const EmptyAppointment = () => {
+  const navigate = useNavigate();
   return (
     <Card className="text-center py-12">
       <CardContent className="space-y-4">
@@ -18,9 +20,9 @@ export const EmptyAppointment = () => {
             appointment.
           </p>
         </div>
-        <Button className="bg-teal-600 hover:bg-teal-700">
-          <CalendarPlus className="mr-2 h-4 w-4" />
-          Schedule New Appointment
+        <Button className="bg-teal-600 hover:bg-teal-700" onClick={() => navigate("/find-doctor")}>
+            <CalendarPlus className="mr-2 h-4 w-4" />
+            Schedule New Appointment
         </Button>
       </CardContent>
     </Card>

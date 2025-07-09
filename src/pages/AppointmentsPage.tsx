@@ -1,71 +1,112 @@
 "use client"
 
-import { useState, useMemo } from "react"
-import { Button } from "@/components/ui/button"
+import { useState, useEffect, useCallback } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { CalendarPlus } from "lucide-react"
+import { Loading } from "@/components/ui/loading"
 import { AppointmentCard } from "@/components/appointments/AppointmentCard"
 import { AppointmentFilters } from "@/components/appointments/AppointmentFilters"
 import { AppointmentDetailsDialog } from "@/components/appointments/AppointmentDetailsDialog"
+import { AppointmentPagination } from "@/components/appointments/AppointmentPagination"
 import { EmptyAppointment } from "@/components/appointments/EmptyAppointment"
-import { mockAppointments } from "@/data/appointment"
-import { getDoctorById } from "@/data/doctors"
+import { AppointmentService } from "@/services/appointmentService"
 import type { Appointment } from "@/types/appointment"
+import { useAuth } from "@/hooks/AuthContext"
 
 const AppointmentsPage = () => {
+  const { user } = useAuth()
+  const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedType, setSelectedType] = useState("ALL")
   const [activeTab, setActiveTab] = useState("ALL")
+  const [currentPage, setCurrentPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [totalElements, setTotalElements] = useState(0)
+  const itemsPerPage = 4
 
-  // Filter appointments based on search, type, and status
-  const filteredAppointments = useMemo(() => {
-    return mockAppointments.filter((appointment) => {
-      const doctor = getDoctorById(appointment.doctorID)
-      const doctorName = doctor?.name || ""
+  // Memoized function to load appointments
+  const loadAppointments = useCallback(async () => {
+    const controller = new AbortController()
+    setIsLoading(true)
 
-      // Search filter
-      const matchesSearch =
-        searchTerm === "" ||
-        doctorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        appointment.reason?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        appointment.type.toLowerCase().includes(searchTerm.toLowerCase())
+    try {
+      const res = await AppointmentService.getAppointments({
+        patientId: "6f26eb2d-788b-4265-910a-4227c3b6f693",
+        type: selectedType !== "ALL" ? selectedType : undefined,
+        status: activeTab !== "ALL" ? activeTab : undefined,
+        page: currentPage,
+        size: itemsPerPage,
+        signal: controller.signal,
+      })
+      setAppointments(res.data)
+      setTotalPages(res.totalPages)
+      setTotalElements(res.totalElements)
+      console.log(res.data)
+    } catch (err) {
+      if (err !== "AbortError") {
+        console.error("Failed to fetch appointments", err)
+      }
+    } finally {
+      setIsLoading(false)
+    }
 
-      // Type filter
-      const matchesType = selectedType === "ALL" || appointment.type === selectedType
+    return () => controller.abort()
+  }, [searchTerm, selectedType, activeTab, currentPage, itemsPerPage])
 
-      // Status filter (tab)
-      const matchesStatus = activeTab === "ALL" || appointment.status === activeTab
+  // Load appointments when dependencies change
+  useEffect(() => {
+    loadAppointments()
+  }, [loadAppointments])
 
-      return matchesSearch && matchesType && matchesStatus
-    })
-  }, [mockAppointments, searchTerm, selectedType, activeTab])
+  // Reset page to 0 when filters change (but not when currentPage changes)
+  useEffect(() => {
+    setCurrentPage(0)
+  }, [searchTerm, selectedType, activeTab])
 
   const openAppointmentDetails = (id: string) => {
+    console.log(id)
     setSelectedAppointmentId(id)
     setDialogOpen(true)
   }
 
   const handleEditAppointment = (appointment: Appointment) => {
-    // TODO: Implement edit functionality
-    console.log("Edit appointment:", appointment.appointmentID)
+    console.log("Edit appointment:", appointment.id)
   }
 
   const handleDeclineAppointment = (appointment: Appointment) => {
-    // TODO: Implement decline functionality
-    console.log("Decline appointment:", appointment.appointmentID)
+    console.log("Decline appointment:", appointment.id)
   }
 
-  const getTabCount = (status: string) => {
-    const typeFilteredAppointments = mockAppointments.filter((appointment) => {
-      // Apply type filter
-      const matchesType = selectedType === "ALL" || appointment.type === selectedType
-      return matchesType
-    })
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page)
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
 
-    if (status === "ALL") return typeFilteredAppointments.length
-    return typeFilteredAppointments.filter((apt) => apt.status === status).length
+  const handleSearchChange = (term: string) => {
+    setSearchTerm(term)
+    // Page reset will be handled by the useEffect above
+  }
+
+  const handleTypeChange = (type: string) => {
+    setSelectedType(type)
+    // Page reset will be handled by the useEffect above
+  }
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab)
+    // Page reset will be handled by the useEffect above
+  }
+
+  if (isLoading) {
+    return (
+      <Loading
+        message="Loading Appointments"
+        subMessage="Retrieving your scheduled appointments and medical visits..."
+        variant="pulse"
+      />
+    )
   }
 
   return (
@@ -76,74 +117,64 @@ const AppointmentsPage = () => {
             <h1 className="text-3xl font-bold text-gray-900">Appointments</h1>
             <p className="text-gray-600">Manage and view all your appointments</p>
           </div>
-          <div className="mt-4 md:mt-0">
-            <Button className="bg-teal-600 hover:bg-teal-700">
-              <CalendarPlus className="mr-2 h-4 w-4" />
-              Schedule New Appointment
-            </Button>
-          </div>
         </div>
 
-        {/* Search and Filters */}
+        {/* Filters */}
         <div className="mb-6">
           <AppointmentFilters
             searchTerm={searchTerm}
-            onSearchChange={setSearchTerm}
+            onSearchChange={handleSearchChange}
             selectedType={selectedType}
-            onTypeChange={setSelectedType}
+            onTypeChange={handleTypeChange}
           />
         </div>
 
-        {/* Status Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:grid-cols-4">
-            <TabsTrigger value="ALL" className="flex items-center gap-2">
-              All
-              <span className="bg-gray-200 text-gray-700 px-2 py-0.5 rounded-full text-xs">{getTabCount("ALL")}</span>
-            </TabsTrigger>
-            <TabsTrigger value="PENDING" className="flex items-center gap-2">
-              Pending
-              <span className="bg-yellow-200 text-yellow-700 px-2 py-0.5 rounded-full text-xs">
-                {getTabCount("PENDING")}
-              </span>
-            </TabsTrigger>
-            <TabsTrigger value="CONFIRMED" className="flex items-center gap-2">
-              Confirmed
-              <span className="bg-green-200 text-green-700 px-2 py-0.5 rounded-full text-xs">
-                {getTabCount("CONFIRMED")}
-              </span>
-            </TabsTrigger>
-            <TabsTrigger value="CANCELLED" className="flex items-center gap-2">
-              Cancelled
-              <span className="bg-red-200 text-red-700 px-2 py-0.5 rounded-full text-xs">
-                {getTabCount("CANCELLED")}
-              </span>
-            </TabsTrigger>
+        {/* Tabs */}
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4">
+            {["ALL", "PENDING", "CONFIRMED", "CANCELLED"].map((status) => (
+              <TabsTrigger key={status} value={status}>
+                {status}
+              </TabsTrigger>
+            ))}
           </TabsList>
 
           <TabsContent value={activeTab} className="space-y-4">
-            {/* Results Summary */}
-            <div className="mb-4">
+            <div className="mb-4 flex justify-between items-center">
               <p className="text-sm text-gray-600">
-                Showing {filteredAppointments.length} of {mockAppointments.length} appointments
+                Showing {totalElements === 0 ? 0 : currentPage * itemsPerPage + 1}-
+                {Math.min((currentPage + 1) * itemsPerPage, totalElements)} of {totalElements} appointments
               </p>
+              {totalPages > 1 && (
+                <p className="text-sm text-gray-600">
+                  Page {currentPage + 1} of {totalPages}
+                </p>
+              )}
             </div>
 
-            {/* Appointments List */}
-            {filteredAppointments.length > 0 ? (
+            {/* Appointment list */}
+            {totalElements > 0 ? (
               <div className="space-y-4">
-                {filteredAppointments.map((appointment) => (
+                {appointments.map((appointment) => (
                   <AppointmentCard
-                    key={appointment.appointmentID}
+                    key={appointment.id}
                     appointment={appointment}
-                    onViewDetails={() => openAppointmentDetails(appointment.appointmentID)}
+                    onViewDetails={() => openAppointmentDetails(appointment.id)}
                     onEdit={() => handleEditAppointment(appointment)}
-                    onDecline={() => handleDeclineAppointment(appointment)}
                   />
                 ))}
               </div>
             ) : (
               <EmptyAppointment />
+            )}
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <AppointmentPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                onPageChange={handlePageChange}
+              />
             )}
           </TabsContent>
         </Tabs>
@@ -152,7 +183,6 @@ const AppointmentsPage = () => {
           open={dialogOpen}
           onOpenChange={setDialogOpen}
           appointmentId={selectedAppointmentId}
-          appointments={mockAppointments}
         />
       </div>
     </div>

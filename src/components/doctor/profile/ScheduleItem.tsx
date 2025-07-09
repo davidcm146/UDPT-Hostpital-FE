@@ -1,57 +1,60 @@
-"use client"
-
-import { Button } from "@/components/ui/button"
-import { Plus } from "lucide-react"
-import type { Schedule } from "@/types/schedule"
-import { formatDate } from "@/lib/DateTimeUtils"
+import type { DoctorScheduleResponse } from "@/types/schedule"
+import { Clock } from "lucide-react"
+import { Badge } from "@/components/ui/badge"
+import { formatDate, formatTimeFromISO } from "@/lib/DateTimeUtils"
 
 interface ScheduleItemProps {
-  date: Date
-  schedule: Schedule | null
-//   onAddHours: (date: Date) => void
+  schedule: DoctorScheduleResponse
+  date?: string // Optional date prop since ScheduleResponse doesn't include date
 }
 
-const ScheduleItem = ({ date, schedule }: ScheduleItemProps) => {
-  const isToday = date.toDateString() === new Date().toDateString()
-
-  const formatTime = (time: string): string => {
-    const [hours, minutes] = time.split(":").map(Number)
-    const period = hours >= 12 ? "PM" : "AM"
-    const displayHour = hours > 12 ? hours - 12 : hours === 0 ? 12 : hours
-    return `${displayHour}:${minutes.toString().padStart(2, "0")} ${period}`
+const ScheduleItem = ({ schedule, date }: ScheduleItemProps) => {
+  const isToday = (dateString?: string): boolean => {
+    if (!dateString) return false
+    const dateObj = new Date(dateString)
+    const today = new Date()
+    return dateObj.toDateString() === today.toDateString()
   }
 
-  return (
-    <div className={`border rounded-lg p-4 ${isToday ? "border-teal-200 bg-teal-50" : "border-gray-200"}`}>
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <div className="flex items-center space-x-3">
-            <div className="min-w-0 flex-1">
-              <h4 className={`text-sm font-medium ${isToday ? "text-teal-900" : "text-gray-900"}`}>
-                {formatDate(date)}
-                {isToday && <span className="ml-2 text-xs text-teal-600">(Today)</span>}
-              </h4>
-            </div>
+  const hasAvailability = schedule.workShifts && schedule.workShifts.length > 0
 
-            {schedule ? (
-              <div className="flex items-center space-x-2">
-                <span className="text-sm text-gray-600 mr-8">
-                  {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
-                </span>
-                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full mr-2 bg-green-100 text-green-800">
-                  Available
-                </span>
-              </div>
-            ) : (
-              <div className="flex items-center space-x-2">
-                <span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800">
-                  Not Available
-                </span>
-                
-              </div>
-            )}
+  return (
+    <div
+      className={`border rounded-lg p-6 ${isToday(date) ? "border-teal-200 bg-teal-50" : "border-gray-200 bg-white"}`}
+    >
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h3 className={`text-lg font-semibold ${isToday(date) ? "text-teal-900" : "text-gray-900"}`}>
+              {formatDate(date || "")}
+              {isToday(date) && <span className="ml-2 text-sm font-medium text-teal-600">(Today)</span>}
+            </h3>
           </div>
+          <span className="inline-flex px-3 py-1 text-sm font-semibold rounded-full bg-green-100 text-green-800">
+            {schedule.workShifts?.length || 0} slot{schedule.workShifts?.length !== 1 ? "s" : ""}
+          </span>
         </div>
+
+        <div className="flex items-center gap-2">
+          <Clock className="h-5 w-5 text-teal-600" />
+          <h4 className="text-base font-medium text-gray-900">Available Time Slots</h4>
+        </div>
+
+        {hasAvailability ? (
+          <div className="flex flex-wrap gap-2">
+            {schedule.workShifts.map((workShift, index) => (
+              <Badge
+                key={index}
+                variant="outline"
+                className="px-3 py-2 text-sm font-medium bg-teal-50 text-teal-700 border-teal-200 hover:bg-teal-100"
+              >
+                {formatTimeFromISO(workShift.startTime)} - {formatTimeFromISO(workShift.endTime)}
+              </Badge>
+            ))}
+          </div>
+        ) : (
+          <div className="text-sm text-gray-500 italic">No time slots available</div>
+        )}
       </div>
     </div>
   )

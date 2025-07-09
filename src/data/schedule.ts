@@ -6,7 +6,7 @@ export const mockSchedules: Schedule[] = [
   {
     id: "sch-001",
     doctorID: "550e8400-e29b-41d4-a716-446655440001", // Dr. Sarah Johnson
-    date: "2025-06-17", // Monday
+    date: "2025-07-01", // Monday
     startTime: "08:00",
     endTime: "17:00",
     createdAt: "2024-01-01",
@@ -15,7 +15,7 @@ export const mockSchedules: Schedule[] = [
   {
     id: "sch-002",
     doctorID: "550e8400-e29b-41d4-a716-446655440001", // Dr. Sarah Johnson
-    date: "2025-06-18", // Tuesday
+    date: "2025-07-01", // Tuesday
     startTime: "08:00",
     endTime: "17:00",
     createdAt: "2024-01-01",
@@ -24,7 +24,7 @@ export const mockSchedules: Schedule[] = [
   {
     id: "sch-003",
     doctorID: "550e8400-e29b-41d4-a716-446655440001", // Dr. Sarah Johnson
-    date: "2025-06-19", // Wednesday
+    date: "2025-07-01", // Wednesday
     startTime: "08:00",
     endTime: "17:00",
     createdAt: "2024-01-01",
@@ -120,9 +120,9 @@ export const hasAppointmentConflict = (doctorID: string, date: Date, startTime: 
 
   const existingAppointments = mockAppointments.filter(
     (appointment) =>
-      appointment.doctorID === doctorID &&
+      appointment.doctorId === doctorID &&
       appointment.status !== "CANCELLED" &&
-      new Date(appointment.appointmentDate).toISOString().split("T")[0] === dateString,
+      new Date(appointment.startTime).toISOString().split("T")[0] === dateString,
   )
 
   for (const appointment of existingAppointments) {
@@ -202,8 +202,8 @@ export const getConflictingAppointments = (doctorID: string, date: Date, startTi
   const requestedEnd = convertTimeToMinutes(endTime)
 
   return mockAppointments.filter((appointment) => {
-    if (appointment.doctorID !== doctorID || appointment.status === "CANCELLED") return false
-    if (new Date(appointment.appointmentDate).toISOString().split("T")[0] !== dateString) return false
+    if (appointment.doctorId !== doctorID || appointment.status === "CANCELLED") return false
+    if (new Date(appointment.startTime).toISOString().split("T")[0] !== dateString) return false
 
     const existingStart = convertTimeToMinutes(appointment.startTime)
     const existingEnd = convertTimeToMinutes(appointment.endTime)
@@ -222,9 +222,9 @@ export const getBookedTimeRanges = (doctorID: string, date: Date): Array<{ start
 
   const bookedAppointments = mockAppointments.filter(
     (appointment) =>
-      appointment.doctorID === doctorID &&
+      appointment.doctorId === doctorID &&
       appointment.status !== "CANCELLED" &&
-      new Date(appointment.appointmentDate).toISOString().split("T")[0] === dateString,
+      new Date(appointment.startTime).toISOString().split("T")[0] === dateString,
   )
 
   return bookedAppointments.map((appointment) => ({

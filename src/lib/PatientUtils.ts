@@ -8,21 +8,20 @@ export const formatWeight = (weightKg: number): string => {
   const pounds = Math.round(weightKg * 2.20462)
   return `${pounds} lbs (${weightKg} kg)`
 }
+export function calculateAge(dob?: string | Date): number | null {
+  if (!dob) return null
 
-export function calculateAge(DOB: string | Date): number {
-  const birthDate = new Date(DOB)
+  const birthDate = typeof dob === "string" ? new Date(dob) : dob
+  if (isNaN(birthDate.getTime())) return null
+
   const today = new Date()
-
   let age = today.getFullYear() - birthDate.getFullYear()
 
-  // Kiểm tra nếu chưa tới sinh nhật năm nay thì trừ đi 1
-  const hasHadBirthdayThisYear =
-    today.getMonth() > birthDate.getMonth() ||
-    (today.getMonth() === birthDate.getMonth() && today.getDate() >= birthDate.getDate())
-
-  if (!hasHadBirthdayThisYear) {
+  const thisYearBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate())
+  if (today < thisYearBirthday) {
     age--
   }
 
   return age
 }
+

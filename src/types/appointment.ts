@@ -1,22 +1,36 @@
+
 export interface Appointment {
-  appointmentID: string // uuid
-  patientID: string // uuid
-  doctorID: string // uuid
-  status: "PENDING" | "CONFIRMED" | "CANCELLED" // varchar
-  type: "EMERGENCY" | "CHECKUP" | "FOLLOW-UP"
-  appointmentDate: Date | string // Date
-  startTime: string // Time (stored as string like "09:00")
+  id: string
+  patientId: string
+  patientName: string | null
+  doctorId: string
+  doctorName: string | null
+  description: string | null
+  status: AppointmentStatus
+  type: "CONSULTATION" | "CHECKUP" | "FOLLOW-UP" | "EMERGENCY"
+  reason: string
+  cancelReason: string | null
+  startTime: string
   endTime: string
-  reason?: string
-  cancelReason?: string
-  createdAt: Date | string
-  updatedAt: Date | string
+  createdAt: string
+  updatedAt: string
+}
+
+type AppointmentAction = "CONFIRMED" | "CANCELLED"
+type AppointmentStatus = "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED"
+
+export interface UpdateAppointmentPayload {
+  action: AppointmentAction
+  cancelReason?: string // optional if action is CONFIRMED
 }
 
 export interface CreateAppointmentRequest {
-  patientID: string
-  doctorID: string
-  appointmentDate: Date
-  startTime: string
-  endTime: string
+  patientId: string
+  doctorId: string
+  doctorName?: string
+  patientName?: string
+  type: AppointmentStatus
+  reason: string
+  startTime: string 
+  endTime: string 
 }

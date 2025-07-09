@@ -48,6 +48,7 @@ const PersonalInfoTab = ({ doctorData, isEditing, onSave }: PersonalInfoTabProps
                 <Input
                   id="name"
                   value={formData.name || ""}
+                  className="mt-2"
                   onChange={(e) => handleChange("name", e.target.value)}
                 />
               ) : (
@@ -64,6 +65,7 @@ const PersonalInfoTab = ({ doctorData, isEditing, onSave }: PersonalInfoTabProps
                 <Input
                   id="specialty"
                   value={formData.specialty || ""}
+                  className="mt-2"
                   onChange={(e) => handleChange("specialty", e.target.value)}
                 />
               ) : (
@@ -80,6 +82,7 @@ const PersonalInfoTab = ({ doctorData, isEditing, onSave }: PersonalInfoTabProps
                 <Input
                   id="education"
                   value={formData.education || ""}
+                  className="mt-2"
                   onChange={(e) => handleChange("education", e.target.value)}
                 />
               ) : (
@@ -96,6 +99,7 @@ const PersonalInfoTab = ({ doctorData, isEditing, onSave }: PersonalInfoTabProps
                 <Input
                   id="experience"
                   value={formData.experience || ""}
+                  className="mt-2"
                   onChange={(e) => handleChange("experience", e.target.value)}
                 />
               ) : (
@@ -115,6 +119,7 @@ const PersonalInfoTab = ({ doctorData, isEditing, onSave }: PersonalInfoTabProps
                   id="email"
                   type="email"
                   value={formData.email || ""}
+                  className="mt-2"
                   onChange={(e) => handleChange("email", e.target.value)}
                 />
               ) : (
@@ -126,17 +131,18 @@ const PersonalInfoTab = ({ doctorData, isEditing, onSave }: PersonalInfoTabProps
             </div>
 
             <div>
-              <Label htmlFor="phone">Phone Number</Label>
+              <Label htmlFor="phoneNumber">Phone Number</Label>
               {isEditing ? (
                 <Input
-                  id="phone"
-                  value={formData.phone || ""}
-                  onChange={(e) => handleChange("phone", e.target.value)}
+                  id="phoneNumber"
+                  value={formData.phoneNumber || ""}
+                  className="mt-2"
+                  onChange={(e) => handleChange("phoneNumber", e.target.value)}
                 />
               ) : (
                 <div className="flex items-center mt-1">
                   <Phone className="h-4 w-4 text-gray-400 mr-2" />
-                  <span>{doctorData.phone}</span>
+                  <span>{doctorData.phoneNumber}</span>
                 </div>
               )}
             </div>
@@ -147,6 +153,7 @@ const PersonalInfoTab = ({ doctorData, isEditing, onSave }: PersonalInfoTabProps
                 <Input
                   id="address"
                   value={formData.address || ""}
+                  className="mt-2"
                   onChange={(e) => handleChange("address", e.target.value)}
                 />
               ) : (

@@ -1,15 +1,14 @@
 import type { Medicine } from "@/types/medicine"
 
 export interface Prescription {
-  [x: string]: any
-  details: any
   id: string // uuid
   patientId: string // uuid
   doctorId: string // uuid
   medicalRecordId: string 
-  status: "Taken" | "Not taken" // varchar
+  status: "TAKEN" | "NOT_TAKEN" // varchar
   totalPrice: number // decimal
   createdAt: string | Date // Datetime
+  updatedAt: string | Date
 }
 
 export interface PrescriptionDetail {
@@ -33,6 +32,14 @@ export interface CreatePrescriptionRequest {
     quantity: number
     note: string
   }>
+}
+
+export interface PrescriptionsParams {
+  patientId?: string
+  doctorId?: string
+  limit?: number
+  offset?: number
+  signal?: AbortSignal
 }
 
 // This is what the UI will receive - prescription details WITH medicine objects attached

@@ -1,9 +1,10 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect, useCallback, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Download, RefreshCw, Plus, FileText } from "lucide-react"
+import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Download, RefreshCw, Plus, FileText, AlertCircle } from "lucide-react"
 import { MedicalRecordHistoryCard } from "@/components/doctor/medical-record/MedicalRecordHistoryCard"
 import {
   MedicalRecordHistoryFilters,
@@ -12,22 +13,28 @@ import {
 import { PatientDetailsDialog } from "@/components/doctor/medical-record/PatientDetailsDialog"
 import { CreateMedicalRecordDialog } from "@/components/doctor/medical-record/CreateMedicalRecordDialog"
 import { CreatePrescriptionDialog } from "@/components/doctor/prescriptions/CreatePrescriptionDialog"
-import {
-  getMedicalRecordsByDoctor,
-  getDoctorMedicalRecordStats,
-  searchMedicalRecords,
-  filterMedicalRecordsByDateRange,
-  getMedicalRecordById,
-} from "@/data/medical-record"
+import { MedicalRecordDetailsDialog } from "@/components/doctor/medical-record/MedicalRecordDetailsDialog"
+import { MedicalRecordPagination } from "@/components/doctor/medical-record/MedicalRecordPagination"
+import { Loading } from "@/components/ui/loading"
+import { MedicalRecordService } from "@/services/medicalRecordService"
 import { getPatientById } from "@/data/patient"
 import type { MedicalRecord } from "@/types/medical-record"
 import type { DoctorPatient } from "@/data/doctor-patients"
-import { MedicalRecordDetailsDialog } from "@/components/doctor/medical-record/MedicalRecordDetailsDialog"
 
 const MedicalRecordHistoryPage = () => {
   // For demo purposes, using a fixed doctor ID
-  const currentDoctorID = "550e8400-e29b-41d4-a716-446655440001"
+  const currentDoctorID = "dc0456a5-9c41-4372-aa0a-2b1dc6d2b6d9"
 
+  // State for medical records and pagination
+  const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([])
+  const [currentPage, setCurrentPage] = useState(0)
+  const [totalPages, setTotalPages] = useState(0)
+  const [totalElements, setTotalElements] = useState(0)
+  const [pageSize, setPageSize] = useState(4)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // Dialog states
   const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null)
   const [selectedPatient, setSelectedPatient] = useState<DoctorPatient | null>(null)
   const [selectedRecordForPatient, setSelectedRecordForPatient] = useState<MedicalRecord | null>(null)
@@ -50,47 +57,110 @@ const MedicalRecordHistoryPage = () => {
     diagnosis: "",
   })
 
-  // Get all medical records for the current doctor
-  const allDoctorRecords = useMemo(() => getMedicalRecordsByDoctor(currentDoctorID), [currentDoctorID])
+  // Statistics state
+  const [stats, setStats] = useState({
+    totalRecords: 0,
+    totalPatients: 0,
+    thisMonthRecords: 0,
+    emergencyRecords: 0,
+  })
 
-  // Get doctor statistics
-  const doctorStats = useMemo(() => getDoctorMedicalRecordStats(currentDoctorID), [currentDoctorID])
+  // Abort controller for API requests
+  const abortControllerRef = useRef<AbortController | null>(null)
 
-  // Apply filters to medical records
+  // Fetch medical records from API
+  const fetchMedicalRecords = useCallback(
+    async (page = 0, resetData = false) => {
+      // Cancel previous request
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+
+      const controller = new AbortController()
+      abortControllerRef.current = controller
+
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        const params = {
+          doctorId: currentDoctorID,
+          limit: pageSize,
+          offset: page * pageSize,
+          signal: controller.signal,
+          ...(filters.search.trim() && { diagnosis: filters.search.trim() }),
+          ...(filters.diagnosis.trim() && { diagnosis: filters.diagnosis.trim() }),
+          ...(filters.visitType.length === 1 && { visitType: filters.visitType[0] }),
+          ...(filters.dateRange.from && { from: filters.dateRange.from.toISOString().split("T")[0] }),
+          ...(filters.dateRange.to && { to: filters.dateRange.to.toISOString().split("T")[0] }),
+        }
+
+        const response = await MedicalRecordService.getMedicalRecords(params)
+
+        // Only update if this request wasn't cancelled
+        if (!controller.signal.aborted) {
+          if (resetData || page === 0) {
+            setMedicalRecords(response.data)
+          } else {
+            setMedicalRecords((prev) => [...prev, ...response.data])
+          }
+
+          setCurrentPage(response.page)
+          setTotalPages(response.totalPages)
+          setTotalElements(response.totalElements)
+          setPageSize(response.pageSize)
+        }
+      } catch (err) {
+        if (!controller.signal.aborted) {
+          console.error("Failed to fetch medical records:", err)
+          setError("Failed to load medical records. Please check your connection and try again.")
+          setMedicalRecords([])
+          setTotalElements(0)
+          setTotalPages(0)
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setIsLoading(false)
+        }
+      }
+    },
+    [currentDoctorID, filters, pageSize],
+  )
+
+  // Initial load
+  useEffect(() => {
+    fetchMedicalRecords(0, true)
+  }, []) // Only run once on mount
+
+  // Handle filter changes
+  useEffect(() => {
+    setCurrentPage(0)
+    fetchMedicalRecords(0, true)
+  }, [filters])
+
+  // Handle page change
+  const handlePageChange = useCallback(
+    (page: number) => {
+      setCurrentPage(page)
+      fetchMedicalRecords(page, true)
+    },
+    [fetchMedicalRecords],
+  )
+
+  // Filter medical records based on client-side filters (for complex filters not supported by API)
   const filteredRecords = useMemo(() => {
-    let result = [...allDoctorRecords]
-
-    // Apply search filter
-    if (filters.search) {
-      result = searchMedicalRecords(result, filters.search)
-    }
-
-    // Apply patient name filter
-    if (filters.patientName) {
-      result = result.filter((record) => {
+    return medicalRecords.filter((record) => {
+      // Patient name filter (client-side)
+      if (filters.patientName) {
         const patient = getPatientById(record.patientId)
-        return patient?.name.toLowerCase().includes(filters.patientName.toLowerCase())
-      })
-    }
+        if (!patient?.name.toLowerCase().includes(filters.patientName.toLowerCase())) {
+          return false
+        }
+      }
 
-    // Apply diagnosis filter
-    if (filters.diagnosis) {
-      result = result.filter((record) => record.diagnosis.toLowerCase().includes(filters.diagnosis.toLowerCase()))
-    }
-
-    // Apply visit type filter
-    if (filters.visitType.length > 0) {
-      result = result.filter((record) => filters.visitType.includes(record.visitType))
-    }
-
-    // Apply date range filter
-    if (filters.dateRange.from || filters.dateRange.to) {
-      result = filterMedicalRecordsByDateRange(result, filters.dateRange.from, filters.dateRange.to)
-    }
-
-    // Sort by visit date (most recent first)
-    return result.sort((a, b) => new Date(b.visitDate).getTime() - new Date(a.visitDate).getTime())
-  }, [allDoctorRecords, filters])
+      return true
+    })
+  }, [medicalRecords, filters.patientName])
 
   // Reset filters
   const resetFilters = () => {
@@ -122,7 +192,7 @@ const MedicalRecordHistoryPage = () => {
 
   // Event handlers
   const handleViewRecordDetails = (recordID: string) => {
-    const record = getMedicalRecordById(recordID)
+    const record = medicalRecords.find((r) => r.id === recordID)
     if (record) {
       setSelectedRecord(record)
       setRecordDetailsOpen(true)
@@ -131,11 +201,9 @@ const MedicalRecordHistoryPage = () => {
 
   const handleViewPatient = (patientID: string, recordID?: string) => {
     const patient = getPatientById(patientID)
-    const record = recordID ? getMedicalRecordById(recordID) : null
-
+    const record = recordID ? medicalRecords.find((r) => r.id === recordID) : null
     console.log("Opening patient dialog for:", patient)
     console.log("With medical record:", record)
-
     if (patient) {
       setSelectedPatient(patient)
       setSelectedRecordForPatient(record ?? null)
@@ -159,9 +227,19 @@ const MedicalRecordHistoryPage = () => {
   }
 
   const handleRefreshData = () => {
-    console.log("Refreshing medical record data...")
-    // In a real app, refresh data from API
-    alert("Medical record data refreshed")
+    setCurrentPage(0)
+    fetchMedicalRecords(0, true)
+  }
+
+  // Show loading component during initial load
+  if (isLoading && medicalRecords.length === 0) {
+    return (
+      <Loading
+        message="Loading Medical Records"
+        subMessage="Fetching medical records and patient data..."
+        variant="heartbeat"
+      />
+    )
   }
 
   return (
@@ -182,64 +260,20 @@ const MedicalRecordHistoryPage = () => {
                 <Plus className="mr-2 h-4 w-4" />
                 Create New Record
               </Button>
-              <Button variant="outline" onClick={handleExportData}>
-                <Download className="mr-2 h-4 w-4" />
-                Export
-              </Button>
-              <Button variant="outline" onClick={handleRefreshData}>
-                <RefreshCw className="mr-2 h-4 w-4" />
+              <Button variant="outline" onClick={handleRefreshData} disabled={isLoading} className="bg-transparent">
+                <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? "animate-spin" : ""}`} />
                 Refresh
               </Button>
             </div>
           </div>
 
-          {/* Statistics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Total Records</p>
-                    <p className="text-2xl font-bold text-gray-900">{doctorStats.totalRecords}</p>
-                  </div>
-                  <FileText className="h-8 w-8 text-teal-600" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Total Patients</p>
-                    <p className="text-2xl font-bold text-gray-900">{doctorStats.totalPatients}</p>
-                  </div>
-                  <FileText className="h-8 w-8 text-blue-600" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">This Month</p>
-                    <p className="text-2xl font-bold text-gray-900">{doctorStats.thisMonthRecords}</p>
-                  </div>
-                  <FileText className="h-8 w-8 text-green-600" />
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-600">Emergency</p>
-                    <p className="text-2xl font-bold text-gray-900">{doctorStats.emergencyRecords}</p>
-                  </div>
-                  <FileText className="h-8 w-8 text-red-600" />
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          {/* Error Alert */}
+          {error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
 
           {/* Filters */}
           <div className="mb-6">
@@ -249,19 +283,31 @@ const MedicalRecordHistoryPage = () => {
           {/* Medical Records List */}
           <div className="space-y-4">
             {filteredRecords.length > 0 ? (
-              filteredRecords.map((record) => {
-                const patient = getPatientById(record.patientId)
-                return (
-                  <MedicalRecordHistoryCard
-                    key={record.id}
-                    record={record}
-                    patient={patient}
-                    onViewDetails={handleViewRecordDetails}
-                    onViewPatient={(patientID) => handleViewPatient(patientID, record.id)}
-                    onAddPrescription={handleAddPrescription}
-                  />
-                )
-              })
+              <>
+                {filteredRecords.map((record) => {
+                  const patient = getPatientById(record.patientId)
+                  return (
+                    <MedicalRecordHistoryCard
+                      key={record.id}
+                      record={record}
+                      patient={patient}
+                      onViewDetails={handleViewRecordDetails}
+                      onViewPatient={(patientID) => handleViewPatient(patientID, record.id)}
+                      onAddPrescription={handleAddPrescription}
+                    />
+                  )
+                })}
+
+                {/* Pagination */}
+                <MedicalRecordPagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  totalItems={totalElements}
+                  itemsPerPage={pageSize}
+                  onPageChange={handlePageChange}
+                  isLoading={isLoading}
+                />
+              </>
             ) : (
               <Card>
                 <CardContent className="p-6 text-center">
@@ -277,7 +323,7 @@ const MedicalRecordHistoryPage = () => {
                       : "You haven't created any medical records yet."}
                   </p>
                   {hasActiveFilters(filters) ? (
-                    <Button onClick={resetFilters} variant="outline">
+                    <Button onClick={resetFilters} variant="outline" className="bg-transparent">
                       Reset Filters
                     </Button>
                   ) : (
@@ -297,7 +343,7 @@ const MedicalRecordHistoryPage = () => {
           open={recordDetailsOpen}
           onOpenChange={setRecordDetailsOpen}
           record={selectedRecord}
-          patient={selectedRecord ? getPatientById(selectedRecord.patientId) ?? null : null}
+          patient={selectedRecord ? (getPatientById(selectedRecord.patientId) ?? null) : null}
         />
 
         <PatientDetailsDialog
@@ -313,7 +359,8 @@ const MedicalRecordHistoryPage = () => {
           patient={null}
           onRecordCreated={(newRecord) => {
             console.log("New record created:", newRecord)
-            // In a real app, refresh the data
+            // Refresh the data
+            handleRefreshData()
           }}
         />
 

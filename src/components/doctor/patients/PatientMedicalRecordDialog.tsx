@@ -8,6 +8,7 @@ import {
   FileText,
   Stethoscope,
   Plus,
+  Loader2,
 } from "lucide-react"
 import { getMedicalRecordsByPatient } from "@/data/medical-record"
 import { MedicalRecordCard } from "../medical-record/MedicalRecordCard"
@@ -24,9 +25,10 @@ interface PatientMedicalRecordDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   patient: Patient | null
+  isLoading: boolean
 }
 
-export function PatientMedicalRecordDialog({ open, onOpenChange, patient }: PatientMedicalRecordDialogProps) {
+export function PatientMedicalRecordDialog({ open, onOpenChange, patient, isLoading }: PatientMedicalRecordDialogProps) {
   const [activeTab, setActiveTab] = useState("overview")
   const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null)
   const [recordDetailsOpen, setRecordDetailsOpen] = useState(false)
@@ -38,7 +40,7 @@ export function PatientMedicalRecordDialog({ open, onOpenChange, patient }: Pati
   // Load medical records for this patient
   useEffect(() => {
     if (patient) {
-      const records = getMedicalRecordsByPatient(patient.userId)
+      const records = getMedicalRecordsByPatient(patient.id)
       setMedicalRecords(records)
     }
   }, [patient])
@@ -71,70 +73,33 @@ export function PatientMedicalRecordDialog({ open, onOpenChange, patient }: Pati
           <DialogHeader>
             <DialogTitle className="text-xl">Medical Record - {patient?.name}</DialogTitle>
           </DialogHeader>
+          {isLoading ? (
+            <div className="flex justify-center items-center h-60">
+              <Loader2 className="h-6 w-6 animate-spin text-teal-600 mr-2" />
+              <span>Loading info...</span>
+            </div>
+          ) : (
+            <Tabs defaultValue="overview" onValueChange={setActiveTab} className="w-full">
+              <TabsList className="mb-4">
+                <TabsTrigger value="overview" className="flex items-center">
+                  <User className="mr-2 h-4 w-4" />
+                  Patient Overview
+                </TabsTrigger>
+                <TabsTrigger value="medical" className="flex items-center">
+                  <Stethoscope className="mr-2 h-4 w-4" />
+                  Medical History
+                </TabsTrigger>
+              </TabsList>
 
-          <Tabs defaultValue="overview" onValueChange={setActiveTab} className="w-full">
-            <TabsList className="mb-4">
-              <TabsTrigger value="overview" className="flex items-center">
-                <User className="mr-2 h-4 w-4" />
-                Patient Overview
-              </TabsTrigger>
-              <TabsTrigger value="medical" className="flex items-center">
-                <Stethoscope className="mr-2 h-4 w-4" />
-                Medical History
-              </TabsTrigger>
-              {/* <TabsTrigger value="records" className="flex items-center">
-                <FileText className="mr-2 h-4 w-4" />
-                Medical Records ({recordStats.total})
-              </TabsTrigger> */}
-            </TabsList>
+              <TabsContent value="overview">
+                <PatientDetailsInfo patient={patient} />
+              </TabsContent>
 
-            {/* Patient Overview Tab */}
-            <TabsContent value="overview">
-              <PatientDetailsInfo patient={patient}/>
-            </TabsContent>
-
-            {/* Medical History Tab */}
-            <TabsContent value="medical">
-              <MedicalHistoryTab medicalRecords={medicalRecords} record={null} />
-            </TabsContent>
-
-            {/* Medical Records Tab */}
-            <TabsContent value="records">
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold">Medical Records</h3>
-                  <Button className="bg-teal-600 hover:bg-teal-700" onClick={handleCreateMedicalRecord}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Create New Record
-                  </Button>
-                </div>
-
-                {medicalRecords.length > 0 ? (
-                  <div className="space-y-4">
-                    {medicalRecords.map((record) => (
-                      <MedicalRecordCard
-                        key={record.id}
-                        record={record}
-                        onViewDetails={handleViewRecordDetails}
-                        onAddPrescription={handleAddPrescriptionToRecord} prescriptionCount={getPrescriptionsByMedicalRecord(record.id).length} />
-                    ))}
-                  </div>
-                ) : (
-                  <Card>
-                    <CardContent className="p-6 text-center">
-                      <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Medical Records</h3>
-                      <p className="text-gray-500 mb-4">This patient has no medical records on file.</p>
-                      <Button className="bg-teal-600 hover:bg-teal-700" onClick={handleCreateMedicalRecord}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Create First Record
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="medical">
+                <MedicalHistoryTab medicalRecords={medicalRecords} record={null} />
+              </TabsContent>
+            </Tabs>
+          )}
         </DialogContent>
       </Dialog>
 
