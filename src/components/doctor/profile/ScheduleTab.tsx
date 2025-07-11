@@ -1,5 +1,3 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card"
 import { Calendar, Loader2, AlertCircle, RefreshCw } from "lucide-react"
@@ -25,7 +23,6 @@ const ScheduleTab = ({ doctorData, onSave }: ScheduleTabProps) => {
     setError(null)
 
     try {
-      console.log("Fetching schedules for doctor:", doctorData.id)
 
       // Fetch all schedules for this doctor
       const doctorSchedules = await ScheduleService.fetchDoctorSchedules(doctorData.id)

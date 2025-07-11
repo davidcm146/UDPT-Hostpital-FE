@@ -1,5 +1,3 @@
-"use client"
-
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
@@ -84,7 +82,7 @@ export const CancelAppointmentDialog = ({
             Please provide a reason for cancelling this appointment with{" "}
             <span className="font-medium">{appointment.doctorName}</span> on{" "}
             <span className="font-medium">
-              {formatDate(appointment.startTime.replace(" ", "T"))} {formatTimeFromISO(appointment.startTime)} - {formatTimeFromISO(appointment.endTime)}
+              {formatDate(appointment?.startTime?.replace(" ", "T") || "")} {formatTimeFromISO(appointment.startTime)} - {formatTimeFromISO(appointment.endTime)}
             </span>
           </DialogDescription>
         </DialogHeader>

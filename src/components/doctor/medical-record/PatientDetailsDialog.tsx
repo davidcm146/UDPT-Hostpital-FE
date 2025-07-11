@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -7,46 +7,38 @@ import type { Patient } from "@/types/patient"
 import type { MedicalRecord } from "@/types/medical-record"
 import { CreatePrescriptionDialog } from "../prescriptions/CreatePrescriptionDialog"
 import { PrescriptionDetailsDialog } from "../prescriptions/PrescriptionDetailsDialog"
-import { getMedicalRecordsByPatient } from "@/data/medical-record"
-import { getPrescriptionsByMedicalRecord, getPrescriptionsByPatient } from "@/data/prescription"
 import { PatientInfo } from "./PatientInfo"
 import { MedicalHistoryTab } from "./MedicalHistoryTab"
+import { MedicalRecordService } from "@/services/medicalRecordService"
 
 interface PatientDetailsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   patient: Patient | null
-  record?: MedicalRecord | null // Optional medical record for context
+  record?: MedicalRecord | null
 }
 
 export function PatientDetailsDialog({ open, onOpenChange, patient, record }: PatientDetailsDialogProps) {
   const [createPrescriptionOpen, setCreatePrescriptionOpen] = useState(false)
   const [prescriptionDetailsOpen, setPrescriptionDetailsOpen] = useState(false)
   const [selectedPrescriptionId, setSelectedPrescriptionId] = useState<string | null>(null)
+  const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([])
+
+  useEffect(() => {
+    const fetchMedicalRecords = async () => {
+      if (!patient) return
+      try {
+        const res = await MedicalRecordService.getMedicalRecords({ patientId: patient.id })
+        setMedicalRecords(res.data)
+      } catch (error) {
+        console.error("Failed to load medical records:", error)
+      }
+    }
+
+    fetchMedicalRecords()
+  }, [patient])
 
   if (!patient) return null
-
-  // Get patient's medical records
-  const patientMedicalRecords = getMedicalRecordsByPatient(patient.userId) || []
-
-  // Get prescriptions - if we have a specific record, get prescriptions for that record
-  // Otherwise, get all prescriptions for the patient
-  const patientPrescriptions = record
-    ? getPrescriptionsByMedicalRecord(record.id) || []
-    : getPrescriptionsByPatient(patient.userId) || []
-
-  console.log("Patient ID:", patient.userId)
-  console.log("Medical Record:", record)
-  console.log("Prescriptions:", patientPrescriptions)
-
-  // const handleCreatePrescription = () => {
-  //   setCreatePrescriptionOpen(true)
-  // }
-
-  // const handleViewPrescriptionDetails = (prescription: PrescriptionWithDetails) => {
-  //   setSelectedPrescriptionId(prescription.id)
-  //   setPrescriptionDetailsOpen(true)
-  // }
 
   return (
     <>
@@ -67,39 +59,27 @@ export function PatientDetailsDialog({ open, onOpenChange, patient, record }: Pa
           <Tabs defaultValue="overview" className="w-full">
             <TabsList className="mb-4">
               <TabsTrigger value="overview">Patient Overview</TabsTrigger>
-              <TabsTrigger value="history">Medical History ({patientMedicalRecords.length})</TabsTrigger>
-              {/* <TabsTrigger value="prescriptions">
-                {record ? "Record Prescriptions" : "All Prescriptions"} ({patientPrescriptions.length})
-              </TabsTrigger> */}
+              <TabsTrigger value="history">Medical History ({medicalRecords.length})</TabsTrigger>
             </TabsList>
 
-            {/* Patient Overview Tab */}
             <TabsContent value="overview">
-              <PatientInfo patient={patient} />
+              <PatientInfo patientId={patient.id} />
             </TabsContent>
 
-            {/* Medical History Tab */}
             <TabsContent value="history">
-              <MedicalHistoryTab medicalRecords={patientMedicalRecords} record={record} />
+              <MedicalHistoryTab medicalRecords={medicalRecords} record={record} />
             </TabsContent>
-
-            {/* Prescriptions Tab */}
-            {/* <TabsContent value="prescriptions">
-              <PrescriptionTab prescriptions={patientPrescriptions} record={record} handleCreatePrescription={handleCreatePrescription} handleViewPrescriptionDetails={handleViewPrescriptionDetails} />   
-            </TabsContent> */}
           </Tabs>
         </DialogContent>
       </Dialog>
 
-      {/* Create Prescription Dialog */}
       <CreatePrescriptionDialog
         open={createPrescriptionOpen}
+        patientId={patient.id}
         onOpenChange={setCreatePrescriptionOpen}
-        patient={patient}
-        medicalRecordID={record?.id || null}
+        medicalRecordId={record?.id || null}
       />
 
-      {/* Prescription Details Dialog */}
       <PrescriptionDetailsDialog
         open={prescriptionDetailsOpen}
         onOpenChange={setPrescriptionDetailsOpen}

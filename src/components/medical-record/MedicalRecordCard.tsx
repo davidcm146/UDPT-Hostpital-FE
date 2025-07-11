@@ -16,14 +16,14 @@ export const MedicalRecordCard = ({ medicalRecord, onViewDetails }: MedicalRecor
   const doctor = getDoctorById(medicalRecord.doctorId)
 
   const getVisitTypeColor = (visitType: string) => {
-    switch (visitType.toLowerCase()) {
-      case "emergency":
+    switch (visitType) {
+      case "EMERGENCY":
         return "bg-red-100 text-red-800"
-      case "follow-up":
+      case "FOLLOW_UP":
         return "bg-blue-100 text-blue-800"
-      case "consultation":
+      case "CONSULTATION":
         return "bg-purple-100 text-purple-800"
-      case "regular checkup":
+      case "CHECKUP":
         return "bg-green-100 text-green-800"
       default:
         return "bg-gray-100 text-gray-800"

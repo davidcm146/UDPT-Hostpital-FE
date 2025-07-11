@@ -7,6 +7,7 @@ import ProfileTabs from "@/components/doctor/profile/ProfileTabs"
 import type { Doctor } from "@/types/doctor"
 import { toast } from "react-toastify"
 import { DoctorService } from "@/services/doctorService"
+import { useAuth } from "@/hooks/AuthContext"
 
 const DoctorProfilePage = () => {
   const [isEditing, setIsEditing] = useState(false)
@@ -14,9 +15,10 @@ const DoctorProfilePage = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const { user } = useAuth();
 
   // Mock current doctor ID - in real app this would come from authentication
-  const currentDoctorID = "fde7f72c-3156-4a00-95ae-873600eb2798"
+  const currentDoctorID = user?.sub as string;
 
   useEffect(() => {
     const fetchDoctor = async () => {

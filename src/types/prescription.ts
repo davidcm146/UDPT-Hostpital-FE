@@ -5,6 +5,7 @@ export interface Prescription {
   patientId: string // uuid
   doctorId: string // uuid
   medicalRecordId: string 
+  note: string
   status: "TAKEN" | "NOT_TAKEN" // varchar
   totalPrice: number // decimal
   createdAt: string | Date // Datetime
@@ -13,21 +14,23 @@ export interface Prescription {
 
 export interface PrescriptionDetail {
   id: string // uuid
-  prescriptionId: string // uuid
-  medicineId: string // uuid - Reference to medicine
+  medicationId: string // uuid - Reference to medicine
   dosage: number // int (mg)
   quantity: number // int
   note: string // text
   subTotal: number // decimal
-  createdAt: string | Date // Datetime
+  price: number
+  description: string
+  createdAt?: string | Date // Datetime
 }
 
 export interface CreatePrescriptionRequest {
   patientId: string
   doctorId: string
   medicalRecordId: string
-  medicines: Array<{
-    medicineID: string
+  note: string
+  prescriptionDetails: Array<{
+    medicationId: string
     dosage: number
     quantity: number
     note: string

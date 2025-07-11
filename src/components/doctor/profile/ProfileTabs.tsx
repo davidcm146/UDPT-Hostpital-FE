@@ -1,12 +1,9 @@
-"use client"
-
 import { useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { User, Calendar } from "lucide-react"
 import PersonalInfoTab from "./PersonalInfoTab"
 import ScheduleTab from "./ScheduleTab"
 import type { Doctor } from "@/types/doctor"
-import type { ScheduleResponse } from "@/types/schedule"
 
 interface ProfileTabsProps {
   doctorData: Doctor

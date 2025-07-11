@@ -29,7 +29,7 @@ export default function PatientProfilePage() {
   const [isSaving, setIsSaving] = useState(false)
 
   // Use the patient ID from URL params or current user ID
-  const patientId = "123456"
+  const patientId = user?.sub as string
 
   const fetchPatient = async () => {
     try {

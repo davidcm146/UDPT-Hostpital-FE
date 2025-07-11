@@ -12,6 +12,7 @@ import { EmptyMedicalRecord } from "@/components/medical-record/EmptyMedicalReco
 import { Loading } from "@/components/ui/loading"
 import { MedicalRecordService } from "@/services/medicalRecordService"
 import type { MedicalRecord } from "@/types/medical-record"
+import { useAuth } from "@/hooks/AuthContext"
 
 const MedicalRecordPage = () => {
   const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([])
@@ -28,6 +29,7 @@ const MedicalRecordPage = () => {
   const [totalPages, setTotalPages] = useState(0)
   const [totalElements, setTotalElements] = useState(0)
   const [pageSize, setPageSize] = useState(4)
+  const { user } = useAuth();
 
   // Track what type of loading is happening
   const [loadingType, setLoadingType] = useState<"initial" | "search" | "filter" | "page" | null>(null)
@@ -50,6 +52,7 @@ const MedicalRecordPage = () => {
 
       try {
         const params = {
+          patientId: user?.sub,
           limit: pageSize,
           offset: page * pageSize,
           signal: controller.signal,

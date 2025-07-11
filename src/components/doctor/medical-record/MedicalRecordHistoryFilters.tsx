@@ -1,7 +1,4 @@
-"use client"
-
 import type React from "react"
-
 import { useState } from "react"
 import { Check, ChevronDown, Filter, X, CalendarIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -45,10 +42,10 @@ export function MedicalRecordHistoryFilters({ filters, setFilters, onReset }: Me
   const [dateOpen, setDateOpen] = useState(false)
 
   const visitTypeOptions = [
-    { value: "Regular Checkup", label: "Regular Checkup" },
-    { value: "Follow-up", label: "Follow-up" },
-    { value: "Emergency", label: "Emergency" },
-    { value: "Consultation", label: "Consultation" },
+    { value: "CHECKUP", label: "Regular Checkup" },
+    { value: "FOLLOW_UP", label: "Follow-up" },
+    { value: "EMERGENCY", label: "Emergency" },
+    { value: "CONSULTATION", label: "Consultation" },
   ]
 
   // Count active filters
@@ -72,13 +69,6 @@ export function MedicalRecordHistoryFilters({ filters, setFilters, onReset }: Me
   const handleDiagnosisSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     setFilters({ ...filters, diagnosis: diagnosisValue })
-  }
-
-  const toggleStatus = (value: string) => {
-    setFilters({
-      ...filters,
-      status: filters.status.includes(value) ? filters.status.filter((s) => s !== value) : [...filters.status, value],
-    })
   }
 
   const toggleVisitType = (value: string) => {
@@ -220,7 +210,7 @@ export function MedicalRecordHistoryFilters({ filters, setFilters, onReset }: Me
         {/* Visit Type Filter */}
         <Popover>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="border-dashed">
+            <Button variant="outline" className="border-dashed bg-transparent">
               Visit Type
               {filters.visitType.length > 0 && (
                 <Badge variant="secondary" className="ml-2 rounded-sm px-1">
@@ -271,7 +261,7 @@ export function MedicalRecordHistoryFilters({ filters, setFilters, onReset }: Me
         {/* Date Range Filter */}
         <Popover open={dateOpen} onOpenChange={setDateOpen}>
           <PopoverTrigger asChild>
-            <Button variant="outline" className="border-dashed">
+            <Button variant="outline" className="border-dashed bg-transparent">
               <CalendarIcon className="mr-2 h-4 w-4" />
               Date Range
               {(filters.dateRange.from || filters.dateRange.to) && (

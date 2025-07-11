@@ -1,34 +1,125 @@
-import { useState } from "react"
+"use client"
+
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Calendar, Stethoscope, Pill, Plus } from "lucide-react"
+import { Calendar, Stethoscope, Loader2, AlertCircle, User, Phone } from "lucide-react"
 import type { MedicalRecord } from "@/types/medical-record"
-import type { Patient } from "@/types/patient"
+import type { Prescription } from "@/types/prescription"
 import { CreatePrescriptionDialog } from "../prescriptions/CreatePrescriptionDialog"
 import { PrescriptionDetailsDialog } from "../prescriptions/PrescriptionDetailsDialog"
-import { getPrescriptionsByMedicalRecord } from "@/data/prescription"
 import { getVisitTypeColor } from "@/lib/MedicalRecordUtils"
+import { formatDate } from "@/lib/DateTimeUtils"
+import { MedicalRecordService } from "@/services/medicalRecordService"
+import { PrescriptionService } from "@/services/prescriptionService"
 import { PatientInfo } from "./PatientInfo"
+import { PrescriptionTab } from "./PrescriptionTab"
 
 interface MedicalRecordDetailsDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  record: MedicalRecord | null
-  patient: Patient | null
+  recordId: string | null
 }
 
-export function MedicalRecordDetailsDialog({ open, onOpenChange, record, patient }: MedicalRecordDetailsDialogProps) {
+export function MedicalRecordDetailsDialog({ open, onOpenChange, recordId }: MedicalRecordDetailsDialogProps) {
   const [createPrescriptionOpen, setCreatePrescriptionOpen] = useState(false)
   const [prescriptionDetailsOpen, setPrescriptionDetailsOpen] = useState(false)
   const [selectedPrescriptionId, setSelectedPrescriptionId] = useState<string | null>(null)
+  const [record, setRecord] = useState<MedicalRecord | null>(null)
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([])
+  const [isLoading, setIsLoading] = useState(false)
+  const [isLoadingPrescriptions, setIsLoadingPrescriptions] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  if (!record || !patient) return null
+  // Fetch medical record when dialog opens and recordId is provided
+  useEffect(() => {
+    const fetchMedicalRecord = async () => {
+      if (!open || !recordId) {
+        setRecord(null)
+        setPrescriptions([])
+        return
+      }
 
-  // Get prescriptions for this record
-  const recordPrescriptions = getPrescriptionsByMedicalRecord(record.id) || []
+      setIsLoading(true)
+      setError(null)
+
+      try {
+        const fetchedRecord = await MedicalRecordService.getMedicalRecordById(recordId)
+        setRecord(fetchedRecord)
+
+        // Fetch prescriptions for this medical record
+        setIsLoadingPrescriptions(true)
+        try {
+          const fetchedPrescriptions = await PrescriptionService.fetchPrescriptionsByMedicalRecord(recordId)
+          setPrescriptions(fetchedPrescriptions)
+        } catch (prescriptionError) {
+          console.error("Error fetching prescriptions:", prescriptionError)
+          setPrescriptions([])
+        } finally {
+          setIsLoadingPrescriptions(false)
+        }
+      } catch (err) {
+        console.error("Error fetching medical record:", err)
+        setError("Failed to load medical record details")
+        setRecord(null)
+        setPrescriptions([])
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchMedicalRecord()
+  }, [open, recordId])
+
+  // Refresh prescriptions when a new prescription is created
+  const refreshPrescriptions = async () => {
+    if (!recordId) return
+
+    setIsLoadingPrescriptions(true)
+    try {
+      const fetchedPrescriptions = await PrescriptionService.fetchPrescriptionsByMedicalRecord("6f26eb2d-788b-4265-910a-4227c3b6f693")
+      setPrescriptions(fetchedPrescriptions)
+    } catch (error) {
+      console.error("Error refreshing prescriptions:", error)
+    } finally {
+      setIsLoadingPrescriptions(false)
+    }
+  }
+
+  if (!recordId) return null
+
+  if (isLoading) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:min-w-5xl max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Loading Medical Record...</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-8 w-8 animate-spin text-teal-600" />
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
+  }
+
+  if (error || !record) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:min-w-5xl max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Error Loading Medical Record</DialogTitle>
+          </DialogHeader>
+          <div className="text-center py-8">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <p className="text-red-600">{error || "Medical record not found"}</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+    )
+  }
 
   const handleAddPrescription = () => {
     setCreatePrescriptionOpen(true)
@@ -37,6 +128,11 @@ export function MedicalRecordDetailsDialog({ open, onOpenChange, record, patient
   const handleViewPrescriptionDetails = (prescriptionID: string) => {
     setSelectedPrescriptionId(prescriptionID)
     setPrescriptionDetailsOpen(true)
+  }
+
+  const handlePrescriptionCreated = () => {
+    // Refresh prescriptions when a new one is created
+    refreshPrescriptions()
   }
 
   return (
@@ -51,7 +147,7 @@ export function MedicalRecordDetailsDialog({ open, onOpenChange, record, patient
             <TabsList className="mb-4">
               <TabsTrigger value="details">Record Details</TabsTrigger>
               <TabsTrigger value="patient">Patient Information</TabsTrigger>
-              <TabsTrigger value="prescriptions">Prescriptions ({recordPrescriptions.length || 0})</TabsTrigger>
+              <TabsTrigger value="prescriptions">Prescriptions ({prescriptions.length})</TabsTrigger>
             </TabsList>
 
             {/* Record Details Tab */}
@@ -74,6 +170,39 @@ export function MedicalRecordDetailsDialog({ open, onOpenChange, record, patient
                   </CardHeader>
                 </Card>
 
+                {/* Patient Summary from Record */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center">
+                      <User className="h-5 w-5 mr-2" />
+                      Patient Summary
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="font-medium">Patient Name:</p>
+                        <p className="text-gray-700">{record.patientName}</p>
+                      </div>
+                      <div>
+                        <p className="font-medium">Patient ID:</p>
+                        <p className="text-gray-700">{record.patientId}</p>
+                      </div>
+                      <div>
+                        <p className="font-medium">Phone Number:</p>
+                        <p className="text-gray-700 flex items-center">
+                          <Phone className="h-4 w-4 mr-1" />
+                          {record.patientPhoneNumber}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="font-medium">Doctor:</p>
+                        <p className="text-gray-700">Dr. {record.doctorName}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 {/* Visit Information */}
                 <Card>
                   <CardHeader>
@@ -86,7 +215,7 @@ export function MedicalRecordDetailsDialog({ open, onOpenChange, record, patient
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <p className="font-medium">Visit Date:</p>
-                        <p className="text-gray-700">{record.visitDate.toLocaleDateString()}</p>
+                        <p className="text-gray-700">{formatDate(record.visitDate)}</p>
                       </div>
                       <div>
                         <p className="font-medium">Visit Type:</p>
@@ -94,11 +223,13 @@ export function MedicalRecordDetailsDialog({ open, onOpenChange, record, patient
                       </div>
                       <div>
                         <p className="font-medium">Created At:</p>
-                        <p className="text-gray-700">{record.createdAt.toLocaleDateString()}</p>
+                        <p className="text-gray-700">{formatDate(record.createdAt?.toString() || "")}</p>
                       </div>
                       <div>
-                        <p className="font-medium">Doctor ID:</p>
-                        <p className="text-gray-700">{record.doctorId}</p>
+                        <p className="font-medium">Last Updated:</p>
+                        <p className="text-gray-700">
+                          {formatDate(record.updatedAt?.toString() || record.createdAt?.toString() || "")}
+                        </p>
                       </div>
                     </div>
                   </CardContent>
@@ -119,14 +250,12 @@ export function MedicalRecordDetailsDialog({ open, onOpenChange, record, patient
                         <p className="text-blue-800">{record.diagnosis}</p>
                       </div>
                     </div>
-
                     <div>
                       <p className="font-medium text-gray-700 mb-2">Treatment:</p>
                       <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
                         <p className="text-green-800">{record.treatment}</p>
                       </div>
                     </div>
-
                     <div>
                       <p className="font-medium text-gray-700 mb-2">Description:</p>
                       <div className="p-3 bg-gray-50 border border-gray-200 rounded-lg">
@@ -140,60 +269,19 @@ export function MedicalRecordDetailsDialog({ open, onOpenChange, record, patient
 
             {/* Patient Information Tab */}
             <TabsContent value="patient">
-              <PatientInfo patient={patient} />
+              <PatientInfo patientId={record.patientId} />
             </TabsContent>
 
             {/* Prescriptions Tab */}
             <TabsContent value="prescriptions">
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <h3 className="text-lg font-semibold">Prescriptions for this Visit</h3>
-                  <Button className="bg-teal-600 hover:bg-teal-700" onClick={handleAddPrescription}>
-                    <Plus className="mr-2 h-4 w-4" />
-                    Add Prescription
-                  </Button>
-                </div>
-
-                {recordPrescriptions.length > 0 ? (
-                  <div className="space-y-4">
-                    {recordPrescriptions.map((prescription, index) => (
-                      <Card key={prescription.id}>
-                        <CardContent className="p-5 space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div>
-                              <h2 className="text-lg font-semibold text-teal-700">Prescription #{index + 1}</h2>
-                              <p className="text-sm text-gray-600 mt-1">
-                                Status: {prescription.status} • Total:{" "}
-                                <span className="font-medium text-black">${prescription.totalPrice.toFixed(2)}</span>
-                              </p>
-                              <p className="text-xs text-gray-400">ID: {prescription.id}</p>
-                            </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleViewPrescriptionDetails(prescription.id)}
-                            >
-                              View Details
-                            </Button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <Card>
-                    <CardContent className="p-6 text-center">
-                      <Pill className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-gray-900 mb-2">No Prescriptions</h3>
-                      <p className="text-gray-500 mb-4">No prescriptions have been added to this medical record.</p>
-                      <Button className="bg-teal-600 hover:bg-teal-700" onClick={handleAddPrescription}>
-                        <Plus className="mr-2 h-4 w-4" />
-                        Add First Prescription
-                      </Button>
-                    </CardContent>
-                  </Card>
-                )}
-              </div>
+              <PrescriptionTab
+                prescriptions={prescriptions}
+                record={record}
+                isLoading={isLoadingPrescriptions}
+                onCreatePrescription={handleAddPrescription}
+                onViewPrescriptionDetails={handleViewPrescriptionDetails}
+                onRefreshPrescriptions={refreshPrescriptions}
+              />
             </TabsContent>
           </Tabs>
         </DialogContent>
@@ -203,8 +291,9 @@ export function MedicalRecordDetailsDialog({ open, onOpenChange, record, patient
       <CreatePrescriptionDialog
         open={createPrescriptionOpen}
         onOpenChange={setCreatePrescriptionOpen}
-        patient={patient}
-        medicalRecordID={record?.id}
+        medicalRecordId={record?.id}
+        patientId={record.patientId}
+        onPrescriptionCreated={handlePrescriptionCreated}
       />
 
       {/* Prescription Details Dialog */}

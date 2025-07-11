@@ -1,4 +1,4 @@
-import type { MedicalRecord, MedicalRecordsParams } from "@/types/medical-record"
+import type { CreateMedicalRecordRequest, MedicalRecord, MedicalRecordsParams } from "@/types/medical-record"
 import type { ApiResponse, Response } from "@/types/api"
 import Cookies from "js-cookie"
 
@@ -60,21 +60,61 @@ export class MedicalRecordService {
     }
   }
 
-
   // Get medical record by ID
-  static async getMedicalRecordById(recordId: string): Promise<MedicalRecord | null> {
-    try {
-      const response = await fetch(`${this.baseUrl}/medical-records/${recordId}`)
-      if (!response.ok) {
-        if (response.status === 404) return null
-        throw new Error("Failed to fetch medical record")
+  static async getMedicalRecordById(id: string): Promise<MedicalRecord> {
+    const res = await fetch(`${this.baseUrl}/medical-records/${id}`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${Cookies.get("token")}`,
+        "Content-Type": "application/json",
       }
-      const data: ApiResponse<MedicalRecord> = await response.json()
-      return data.data
-    } catch (error) {
-      console.error("Error fetching medical record:", error)
-      throw error
+    })
+
+    if (!res.ok) {
+      throw new Error('Failed to fetch medical record')
     }
+
+    const json: Response<MedicalRecord> = await res.json();
+
+    if (json.code !== 200) {
+      throw Error (json.message || "Unknown error");
+    }
+
+    if (!json.data || Array.isArray(json.data)) {
+      throw Error("Invalid format");
+    }
+    return json.data as MedicalRecord
+  }
+
+  static async createMedicalRecord(
+    payload: CreateMedicalRecordRequest,
+    signal?: AbortSignal
+  ): Promise<MedicalRecord> {
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/medical-records`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${Cookies.get("token")}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal,
+    })
+
+    if (!res.ok) {
+      throw new Error(`Failed to create medical record: ${res.status} ${res.statusText}`)
+    }
+
+    const json: Response<MedicalRecord> = await res.json();
+
+    if (json.code !== 200) {
+      throw new Error(json.message || "Unknown error");
+    }
+
+    if (!json.data || Array.isArray(json.data)) {
+      throw Error ("Invalid format");
+    }
+
+    return json.data as MedicalRecord
   }
 
   // Get medical records by patient
@@ -163,25 +203,6 @@ export class MedicalRecordService {
       return data.data
     } catch (error) {
       console.error("Error filtering medical records:", error)
-      throw error
-    }
-  }
-
-  // Create new medical record
-  static async createMedicalRecord(record: Omit<MedicalRecord, "id" | "createdAt">): Promise<MedicalRecord> {
-    try {
-      const response = await fetch(`${this.baseUrl}/medical-records`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(record),
-      })
-      if (!response.ok) throw new Error("Failed to create medical record")
-      const data: ApiResponse<MedicalRecord> = await response.json()
-      return data.data
-    } catch (error) {
-      console.error("Error creating medical record:", error)
       throw error
     }
   }

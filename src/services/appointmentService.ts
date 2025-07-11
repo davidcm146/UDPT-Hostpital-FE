@@ -96,7 +96,7 @@ export class AppointmentService {
 
   static async getAppointmentById(appointmentId: string): Promise<Appointment> {
     try {
-      const response = await fetch(`http://localhost:8083/appointments/${appointmentId}`, {
+      const response = await fetch(`${this.baseUrl}/appointments/${appointmentId}`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${Cookies.get("token")}`,

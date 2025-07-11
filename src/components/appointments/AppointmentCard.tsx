@@ -1,5 +1,3 @@
-"use client"
-
 import { useState } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -76,7 +74,7 @@ export const AppointmentCard = ({ appointment, onViewDetails, onEdit, onAppointm
                 <div className="flex items-center gap-2">
                   <Clock className="h-4 w-4 text-teal-600" />
                   <span>
-                    {formatDate(appointment.startTime.replace(" ", "T"))} {formatTimeFromISO(appointment.startTime)} - {formatTimeFromISO(appointment.endTime)}
+                    {formatDate(appointment?.startTime?.replace(" ", "T") || "")} {formatTimeFromISO(appointment.startTime)} - {formatTimeFromISO(appointment.endTime)}
                   </span>
                 </div>
 

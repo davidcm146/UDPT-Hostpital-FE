@@ -1,11 +1,9 @@
-"use client"
-
 import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { Loader2 } from "lucide-react"
-import { Calendar, Clock, User, FileText } from "lucide-react"
+import { Calendar, Clock, FileText } from "lucide-react"
 import type { Appointment } from "@/types/appointment"
 import { AppointmentService } from "@/services/appointmentService"
 import { formatDate, formatTimeFromISO } from "@/lib/DateTimeUtils"
@@ -179,7 +177,7 @@ export const AppointmentDetailsDialog = ({
                 />
                 <div>
                   <h4 className="font-semibold text-lg">{appointmentDetails.doctorName || "Unknown Doctor"}</h4>
-                  <p className="text-teal-600 font-medium">Doctor ID: {appointmentDetails.doctorId}</p>
+                  {/* <p className="text-teal-600 font-medium">Doctor ID: {appointmentDetails.doctorId}</p> */}
                 </div>
               </div>
             </div>
@@ -191,10 +189,10 @@ export const AppointmentDetailsDialog = ({
               <h3 className="text-lg font-medium">Timeline</h3>
               <div className="text-sm text-gray-600 space-y-1">
                 <p>
-                  <strong>Created:</strong> {new Date(appointmentDetails.createdAt).toLocaleString()}
+                  <strong>Created:</strong> {formatDate(appointmentDetails.createdAt)}
                 </p>
                 <p>
-                  <strong>Last Updated:</strong> {new Date(appointmentDetails.updatedAt).toLocaleString()}
+                  <strong>Last Updated:</strong> {formatDate(appointmentDetails.updatedAt)}
                 </p>
               </div>
             </div>

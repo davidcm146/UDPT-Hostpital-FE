@@ -1,5 +1,3 @@
-"use client"
-
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -59,7 +57,7 @@ export function MedicalRecordDetailsDialog({
           </TabsList>
 
           <TabsContent value="details">
-            <MedicalRecordDetailsTab medicalRecord={medicalRecord} />
+            <MedicalRecordDetailsTab recordId={medicalRecord.id} />
           </TabsContent>
 
           <TabsContent value="prescription">

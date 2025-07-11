@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { getVisitTypeColor } from '@/lib/MedicalRecordUtils'
 import { MedicalRecord } from '@/types/medical-record'
 import { Stethoscope } from 'lucide-react'
+import { formatDate } from '@/lib/DateTimeUtils'
 
 interface MedicalHistoryTabProps {
     medicalRecords: MedicalRecord[]
@@ -41,7 +42,7 @@ export const MedicalHistoryTab = ({ medicalRecords, record }: MedicalHistoryTabP
                                             </Badge>
                                             <div className="flex items-center text-sm text-gray-500">
                                                 <Calendar className="h-4 w-4 mr-1" />
-                                                <span>{medicalRecord.visitDate.toLocaleDateString()}</span>
+                                                <span>{formatDate(medicalRecord.visitDate)}</span>
                                             </div>
                                         </div>
                                     </div>

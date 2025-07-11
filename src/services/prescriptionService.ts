@@ -1,5 +1,5 @@
-import type { Prescription, PrescriptionWithDetails, CreatePrescriptionRequest, PrescriptionsParams } from "@/types/prescription"
-import type { ApiResponse } from "@/types/api"
+import type { Prescription, PrescriptionWithDetails, CreatePrescriptionRequest, PrescriptionsParams, PrescriptionDetail } from "@/types/prescription"
+import type { ApiResponse, Response } from "@/types/api"
 import Cookies from "js-cookie"
 
 export class PrescriptionService {
@@ -60,179 +60,138 @@ export class PrescriptionService {
     }
   }
 
+  static async fetchPrescriptionsByMedicalRecord(medicalRecordId: string): Promise<Prescription[]> {
+    const query = new URLSearchParams()
+    query.append("medicalRecordId", medicalRecordId)
+
+    const res = await fetch(`${this.baseUrl}/prescriptions?${query.toString()}`, {
+      headers: {
+        Authorization: `Bearer ${Cookies.get("token")}`,
+        "Content-Type": "application/json",
+      },
+    })
+
+    if (!res.ok) {
+      throw new Error("Failed to fetch prescriptions")
+    }
+
+    const json: Response<Prescription> = await res.json();
+
+    if (json.code !== 200) {
+      throw new Error(json.message || "Unknown error");
+    }
+
+    if (!json.data|| !Array.isArray(json.data)){
+      throw new Error("Invalid format");
+    }
+
+    return json.data as Prescription[]
+  }
+
+  static async getPrescriptionById(prescriptionId: string): Promise<Prescription> {
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/prescriptions/${prescriptionId}`, {
+      headers: {
+        Authorization: `Bearer ${Cookies.get("token")}`,
+        "Content-Type": "application/json",
+      },
+    })
+
+    if (!res.ok) {
+      throw new Error("Failed to fetch prescription")
+    }
+
+    const json: Response<Prescription> = await res.json()
+
+    if (json.code !== 200) {
+      throw new Error(json.message || "Unknown error");
+    }
+
+    if (!json.data || Array.isArray(json.data)) {
+      throw new Error("Invalid format");
+    }
+    return json.data as Prescription
+  }
+
   // Get prescription by ID with details
-  static async getPrescriptionWithDetails(prescriptionId: string): Promise<PrescriptionWithDetails | null> {
-    try {
-      const response = await fetch(`${this.baseUrl}/prescriptions/${prescriptionId}/details`)
-      if (!response.ok) {
-        if (response.status === 404) return null
-        throw new Error("Failed to fetch prescription with details")
+  static async getPrescriptionDetails(prescriptionId: string): Promise<PrescriptionDetail[]> {
+    const res = await fetch(
+      `${this.baseUrl}/prescriptions/details?prescriptionId=${prescriptionId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${Cookies.get("token")}`,
+          "Content-Type": "application/json",
+        },
       }
-      const data: ApiResponse<PrescriptionWithDetails> = await response.json()
-      return data.data
-    } catch (error) {
-      console.error("Error fetching prescription with details:", error)
-      throw error
+    )
+
+    if (!res.ok) {
+      throw new Error("Failed to fetch prescription details")
     }
+
+    const json: Response<PrescriptionDetail> = await res.json()
+
+    if (json.code !== 200) {
+      throw new Error(json.message || "Unknown error");
+    }
+
+    if (!json.data || !Array.isArray(json.data)) {
+      throw new Error("Invalid format");
+    }
+    return json.data as PrescriptionDetail[]
   }
 
-  // Get prescriptions by patient
-  static async getPrescriptionsByPatient(patientId: string): Promise<PrescriptionWithDetails[]> {
-    try {
-      const response = await fetch(`${this.baseUrl}/prescriptions/patient/${patientId}`)
-      if (!response.ok) throw new Error("Failed to fetch prescriptions by patient")
-      const data: ApiResponse<PrescriptionWithDetails[]> = await response.json()
-      return data.data
-    } catch (error) {
-      console.error("Error fetching prescriptions by patient:", error)
-      throw error
+  static async updatePrescriptionStatus(id: string, status: "TAKEN" | "NOT_TAKEN") {
+    const res = await fetch(`${this.baseUrl}/prescriptions/${id}/status`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${Cookies.get("token")}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ status }),
+    })
+
+    if (!res.ok) {
+      throw new Error("Failed to update prescription status")
     }
+
+    const json: Response<Prescription> = await res.json()
+
+    if (json.code !== 200) {
+      throw new Error("Invalid response format when updating prescription status")
+    }
+
+    if (!json.data || Array.isArray(json.data)) {
+      throw new Error("Invalid response format when updating prescription status")
+
+    }
+
+    return json.data
   }
 
-  // Get prescriptions by doctor
-  static async getPrescriptionsByDoctor(doctorId: string): Promise<PrescriptionWithDetails[]> {
-    try {
-      const response = await fetch(`${this.baseUrl}/prescriptions/doctor/${doctorId}`)
-      if (!response.ok) throw new Error("Failed to fetch prescriptions by doctor")
-      const data: ApiResponse<PrescriptionWithDetails[]> = await response.json()
-      return data.data
-    } catch (error) {
-      console.error("Error fetching prescriptions by doctor:", error)
-      throw error
-    }
-  }
+  static async createPrescription(payload: CreatePrescriptionRequest) {
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/prescriptions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${Cookies.get("token")}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    })
 
-  // Get prescriptions by medical record
-  static async getPrescriptionsByMedicalRecord(medicalRecordId: string): Promise<Prescription[]> {
-    try {
-      const response = await fetch(`${this.baseUrl}/prescriptions/medical-record/${medicalRecordId}`)
-      if (!response.ok) throw new Error("Failed to fetch prescriptions by medical record")
-      const data: ApiResponse<Prescription[]> = await response.json()
-      return data.data
-    } catch (error) {
-      console.error("Error fetching prescriptions by medical record:", error)
-      throw error
+    if (!res.ok) {
+      throw new Error("Failed to create prescription")
     }
-  }
 
-  // Create new prescription
-  static async createPrescription(request: CreatePrescriptionRequest): Promise<Prescription> {
-    try {
-      const response = await fetch(`${this.baseUrl}/prescriptions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(request),
-      })
-      if (!response.ok) throw new Error("Failed to create prescription")
-      const data: ApiResponse<Prescription> = await response.json()
-      return data.data
-    } catch (error) {
-      console.error("Error creating prescription:", error)
-      throw error
-    }
-  }
+    const json: Response<Prescription> = await res.json();
 
-  // Update prescription status
-  static async updatePrescriptionStatus(prescriptionId: string, status: Prescription["status"]): Promise<Prescription> {
-    try {
-      const response = await fetch(`${this.baseUrl}/prescriptions/${prescriptionId}/status`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status }),
-      })
-      if (!response.ok) throw new Error("Failed to update prescription status")
-      const data: ApiResponse<Prescription> = await response.json()
-      return data.data
-    } catch (error) {
-      console.error("Error updating prescription status:", error)
-      throw error
+    if (json.code !== 200) {
+      throw new Error(json.message || "Unknown error");
     }
-  }
 
-  // Update prescription
-  static async updatePrescription(prescriptionId: string, updates: Partial<Prescription>): Promise<Prescription> {
-    try {
-      const response = await fetch(`${this.baseUrl}/prescriptions/${prescriptionId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(updates),
-      })
-      if (!response.ok) throw new Error("Failed to update prescription")
-      const data: ApiResponse<Prescription> = await response.json()
-      return data.data
-    } catch (error) {
-      console.error("Error updating prescription:", error)
-      throw error
+    if (!json.data || Array.isArray(json.data)) {
+      throw new Error("Invalid response format")
     }
-  }
 
-  // Delete prescription
-  static async deletePrescription(prescriptionId: string): Promise<void> {
-    try {
-      const response = await fetch(`${this.baseUrl}/prescriptions/${prescriptionId}`, {
-        method: "DELETE",
-      })
-      if (!response.ok) throw new Error("Failed to delete prescription")
-    } catch (error) {
-      console.error("Error deleting prescription:", error)
-      throw error
-    }
-  }
-
-  // Get prescriptions by status
-  static async getPrescriptionsByStatus(status: Prescription["status"]): Promise<PrescriptionWithDetails[]> {
-    try {
-      const response = await fetch(`${this.baseUrl}/prescriptions?status=${encodeURIComponent(status)}`)
-      if (!response.ok) throw new Error("Failed to fetch prescriptions by status")
-      const data: ApiResponse<PrescriptionWithDetails[]> = await response.json()
-      return data.data
-    } catch (error) {
-      console.error("Error fetching prescriptions by status:", error)
-      throw error
-    }
-  }
-
-  // Search prescriptions
-  static async searchPrescriptions(query: string): Promise<PrescriptionWithDetails[]> {
-    try {
-      const response = await fetch(`${this.baseUrl}/prescriptions/search?q=${encodeURIComponent(query)}`)
-      if (!response.ok) throw new Error("Failed to search prescriptions")
-      const data: ApiResponse<PrescriptionWithDetails[]> = await response.json()
-      return data.data
-    } catch (error) {
-      console.error("Error searching prescriptions:", error)
-      throw error
-    }
-  }
-
-  // Get prescription statistics
-  static async getPrescriptionStats(): Promise<{
-    total: number
-    taken: number
-    notTaken: number
-    totalValue: number
-    averageValue: number
-  }> {
-    try {
-      const response = await fetch(`${this.baseUrl}/prescriptions/stats`)
-      if (!response.ok) throw new Error("Failed to fetch prescription statistics")
-      const data: ApiResponse<{
-        total: number
-        taken: number
-        notTaken: number
-        totalValue: number
-        averageValue: number
-      }> = await response.json()
-      return data.data
-    } catch (error) {
-      console.error("Error fetching prescription statistics:", error)
-      throw error
-    }
+    return json.data;
   }
 }

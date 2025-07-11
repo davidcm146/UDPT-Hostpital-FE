@@ -4,7 +4,7 @@ import { useState, useMemo, useEffect, useCallback, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Download, RefreshCw, Plus, FileText, AlertCircle } from "lucide-react"
+import { RefreshCw, Plus, FileText, AlertCircle } from "lucide-react"
 import { MedicalRecordHistoryCard } from "@/components/doctor/medical-record/MedicalRecordHistoryCard"
 import {
   MedicalRecordHistoryFilters,
@@ -17,13 +17,15 @@ import { MedicalRecordDetailsDialog } from "@/components/doctor/medical-record/M
 import { MedicalRecordPagination } from "@/components/doctor/medical-record/MedicalRecordPagination"
 import { Loading } from "@/components/ui/loading"
 import { MedicalRecordService } from "@/services/medicalRecordService"
-import { getPatientById } from "@/data/patient"
+import { PatientService } from "@/services/patientService"
 import type { MedicalRecord } from "@/types/medical-record"
-import type { DoctorPatient } from "@/data/doctor-patients"
+import type { Patient } from "@/types/patient"
+import { useAuth } from "@/hooks/AuthContext"
 
 const MedicalRecordHistoryPage = () => {
   // For demo purposes, using a fixed doctor ID
-  const currentDoctorID = "dc0456a5-9c41-4372-aa0a-2b1dc6d2b6d9"
+  const { user } = useAuth();
+  const currentDoctorID = user?.sub;
 
   // State for medical records and pagination
   const [medicalRecords, setMedicalRecords] = useState<MedicalRecord[]>([])
@@ -35,8 +37,8 @@ const MedicalRecordHistoryPage = () => {
   const [error, setError] = useState<string | null>(null)
 
   // Dialog states
-  const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null)
-  const [selectedPatient, setSelectedPatient] = useState<DoctorPatient | null>(null)
+  const [selectedRecordId, setSelectedRecordId] = useState<string | null>(null)
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null)
   const [selectedRecordForPatient, setSelectedRecordForPatient] = useState<MedicalRecord | null>(null)
   const [recordDetailsOpen, setRecordDetailsOpen] = useState(false)
   const [patientDialogOpen, setPatientDialogOpen] = useState(false)
@@ -55,14 +57,6 @@ const MedicalRecordHistoryPage = () => {
     },
     patientName: "",
     diagnosis: "",
-  })
-
-  // Statistics state
-  const [stats, setStats] = useState({
-    totalRecords: 0,
-    totalPatients: 0,
-    thisMonthRecords: 0,
-    emergencyRecords: 0,
   })
 
   // Abort controller for API requests
@@ -84,7 +78,7 @@ const MedicalRecordHistoryPage = () => {
 
       try {
         const params = {
-          doctorId: currentDoctorID,
+          doctorId: "cd90c404-6e72-4d57-8d97-05add77c7be1",
           limit: pageSize,
           offset: page * pageSize,
           signal: controller.signal,
@@ -127,6 +121,21 @@ const MedicalRecordHistoryPage = () => {
     [currentDoctorID, filters, pageSize],
   )
 
+  // Update handleViewPatient to fetch patient when needed:
+  const handleViewPatient = async (patientID: string, recordID?: string) => {
+    try {
+      const patient = await PatientService.getPatientById(patientID)
+      const record = recordID ? medicalRecords.find((r) => r.id === recordID) : null
+
+      setSelectedPatient(patient)
+      setSelectedRecordForPatient(record ?? null)
+      setPatientDialogOpen(true)
+    } catch (error) {
+      console.error("Error fetching patient:", error)
+      // Show error message to user
+    }
+  }
+
   // Initial load
   useEffect(() => {
     fetchMedicalRecords(0, true)
@@ -137,6 +146,12 @@ const MedicalRecordHistoryPage = () => {
     setCurrentPage(0)
     fetchMedicalRecords(0, true)
   }, [filters])
+
+  // Add this useEffect after the existing ones
+  useEffect(() => {
+    // Fetch patient data for all records, but only for new patient IDs
+    medicalRecords.forEach((record) => {})
+  }, [medicalRecords]) // Only depend on medicalRecords
 
   // Handle page change
   const handlePageChange = useCallback(
@@ -152,10 +167,7 @@ const MedicalRecordHistoryPage = () => {
     return medicalRecords.filter((record) => {
       // Patient name filter (client-side)
       if (filters.patientName) {
-        const patient = getPatientById(record.patientId)
-        if (!patient?.name.toLowerCase().includes(filters.patientName.toLowerCase())) {
-          return false
-        }
+        return true
       }
 
       return true
@@ -192,23 +204,10 @@ const MedicalRecordHistoryPage = () => {
 
   // Event handlers
   const handleViewRecordDetails = (recordID: string) => {
-    const record = medicalRecords.find((r) => r.id === recordID)
-    if (record) {
-      setSelectedRecord(record)
-      setRecordDetailsOpen(true)
-    }
-  }
-
-  const handleViewPatient = (patientID: string, recordID?: string) => {
-    const patient = getPatientById(patientID)
-    const record = recordID ? medicalRecords.find((r) => r.id === recordID) : null
-    console.log("Opening patient dialog for:", patient)
-    console.log("With medical record:", record)
-    if (patient) {
-      setSelectedPatient(patient)
-      setSelectedRecordForPatient(record ?? null)
-      setPatientDialogOpen(true)
-    }
+    console.log("Attempting to view record details for:", recordID)
+    setSelectedRecordId(recordID)
+    setRecordDetailsOpen(true)
+    console.log("Dialog should open now")
   }
 
   const handleAddPrescription = (recordID: string) => {
@@ -284,19 +283,14 @@ const MedicalRecordHistoryPage = () => {
           <div className="space-y-4">
             {filteredRecords.length > 0 ? (
               <>
-                {filteredRecords.map((record) => {
-                  const patient = getPatientById(record.patientId)
-                  return (
-                    <MedicalRecordHistoryCard
-                      key={record.id}
-                      record={record}
-                      patient={patient}
-                      onViewDetails={handleViewRecordDetails}
-                      onViewPatient={(patientID) => handleViewPatient(patientID, record.id)}
-                      onAddPrescription={handleAddPrescription}
-                    />
-                  )
-                })}
+                {filteredRecords.map((record) => (
+                  <MedicalRecordHistoryCard
+                    key={record.id}
+                    record={record}
+                    onViewDetails={handleViewRecordDetails}
+                    onViewPatient={(patientID) => handleViewPatient(patientID, record.id)}
+                  />
+                ))}
 
                 {/* Pagination */}
                 <MedicalRecordPagination
@@ -342,8 +336,7 @@ const MedicalRecordHistoryPage = () => {
         <MedicalRecordDetailsDialog
           open={recordDetailsOpen}
           onOpenChange={setRecordDetailsOpen}
-          record={selectedRecord}
-          patient={selectedRecord ? (getPatientById(selectedRecord.patientId) ?? null) : null}
+          recordId={selectedRecordId}
         />
 
         <PatientDetailsDialog
@@ -356,19 +349,11 @@ const MedicalRecordHistoryPage = () => {
         <CreateMedicalRecordDialog
           open={createRecordOpen}
           onOpenChange={setCreateRecordOpen}
-          patient={null}
           onRecordCreated={(newRecord) => {
             console.log("New record created:", newRecord)
             // Refresh the data
             handleRefreshData()
           }}
-        />
-
-        <CreatePrescriptionDialog
-          open={createPrescriptionOpen}
-          onOpenChange={setCreatePrescriptionOpen}
-          patient={null}
-          medicalRecordID={prescriptionRecordID}
         />
       </div>
     </div>

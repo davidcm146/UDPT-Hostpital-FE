@@ -28,10 +28,11 @@ export interface MedicalRecordsParams {
 }
 
 export interface CreateMedicalRecordRequest {
-  patientID: string
-  doctorID: string
+  patientId: string
+  doctorId: string
+  visitType: "CHECKUP" | "FOLLOW_UP" | "EMERGENCY" | "CONSULTATION"
   diagnosis: string
   treatment: string
   description: string
-  visitType: MedicalRecord["visitType"]
+  visitDate: string // ISO format (yyyy-mm-dd)
 }

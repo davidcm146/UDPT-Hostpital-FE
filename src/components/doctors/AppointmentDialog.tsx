@@ -16,7 +16,8 @@ import { ScheduleService } from "@/services/scheduleService"
 import TimeRangePicker from "./TimerangePicker"
 import { toast } from "react-toastify"
 import { AppointmentService } from "@/services/appointmentService"
-// import { setBookedAppointments } from "@/components/doctors/AppointmentDialog"
+import { formatDate } from "@/lib/DateTimeUtils"
+import { useAuth } from "@/hooks/AuthContext"
 
 interface AppointmentDialogProps {
   selectedDoctor: Doctor | null
@@ -40,8 +41,9 @@ const AppointmentDialog = ({
   const [isLoadingSchedule, setIsLoadingSchedule] = useState(false)
   const [isCreatingAppointment, setIsCreatingAppointment] = useState(false)
   const [scheduleError, setScheduleError] = useState<string | null>(null)
+  const { user } = useAuth();
 
-  // Fetch doctor schedule and booked appointments when date changes
+  // Fetch doctor schedule and available appointments when date changes
   useEffect(() => {
     const fetchScheduleData = async () => {
       if (!selectedDoctor || !selectedDate) {
@@ -61,8 +63,8 @@ const AppointmentDialog = ({
 
         // Fetch both doctor schedule and available timeframes in parallel
         const [workSchedules, availableData] = await Promise.all([
-          ScheduleService.fetchDoctorSchedules(selectedDoctor.id),
-          ScheduleService.getDoctorAvailableSchedule(selectedDoctor.id, dateString),
+          ScheduleService.fetchDoctorSchedules("fde7f72c-3156-4a00-95ae-873600eb2798"),
+          ScheduleService.getDoctorAvailableSchedule("fde7f72c-3156-4a00-95ae-873600eb2798", dateString),
         ])
 
         // Find the schedule for the selected date
@@ -78,6 +80,8 @@ const AppointmentDialog = ({
 
         if (!daySchedule || !daySchedule.workShifts || daySchedule.workShifts.length === 0) {
           setScheduleError("Doctor is not scheduled to work on this date.")
+        } else if (!availableData.timeFrames || availableData.timeFrames.length === 0) {
+          setScheduleError("No available appointment slots for this date. All slots may be booked.")
         }
       } catch (error) {
         console.error("Error fetching schedule data:", error)
@@ -109,12 +113,12 @@ const AppointmentDialog = ({
     }
   }
 
-  // Validate appointment time against work schedule and booked appointments
+  // Validate appointment time against available timeframes
   const validateAppointmentTime = (startTime: string, endTime: string): string[] => {
     const errors: string[] = []
 
-    if (!doctorSchedule || !doctorSchedule.workShifts || doctorSchedule.workShifts.length === 0) {
-      errors.push("No work schedule available")
+    if (!availableTimeFrames || !availableTimeFrames.timeFrames || availableTimeFrames.timeFrames.length === 0) {
+      errors.push("No available time slots")
       return errors
     }
 
@@ -123,29 +127,27 @@ const AppointmentDialog = ({
     const startTotalMinutes = startHours * 60 + startMinutes
     const endTotalMinutes = endHours * 60 + endMinutes
 
-    // Check if appointment is within work shifts
-    const isWithinWorkShift = doctorSchedule.workShifts.some((shift) => {
-      const shiftStartMinutes = timeToMinutes(shift.startTime)
-      const shiftEndMinutes = timeToMinutes(shift.endTime)
-      return startTotalMinutes >= shiftStartMinutes && endTotalMinutes <= shiftEndMinutes
-    })
-
-    if (!isWithinWorkShift) {
-      errors.push("Selected time is outside doctor's working hours")
+    // Check if appointment duration is valid
+    const duration = endTotalMinutes - startTotalMinutes
+    if (duration <= 0) {
+      errors.push("End time must be after start time")
+    }
+    if (duration < 15) {
+      errors.push("Minimum appointment duration is 15 minutes")
+    }
+    if (duration > 240) {
+      errors.push("Maximum appointment duration is 4 hours")
     }
 
-    // Check if appointment conflicts with available timeframes (inverse logic)
-    if (availableTimeFrames && availableTimeFrames.timeFrames && availableTimeFrames.timeFrames.length > 0) {
-      // Check if the selected time is within any available timeframe
-      const isWithinAvailableSlot = availableTimeFrames.timeFrames.some((availableSlot) => {
-        const availableStart = timeToMinutes(availableSlot.startTime)
-        const availableEnd = timeToMinutes(availableSlot.endTime)
-        return startTotalMinutes >= availableStart && endTotalMinutes <= availableEnd
-      })
+    // Check if the entire appointment time range is within available timeframes
+    const isWithinAvailableSlot = availableTimeFrames.timeFrames.some((availableSlot) => {
+      const availableStart = timeToMinutes(availableSlot.startTime)
+      const availableEnd = timeToMinutes(availableSlot.endTime)
+      return startTotalMinutes >= availableStart && endTotalMinutes <= availableEnd
+    })
 
-      if (!isWithinAvailableSlot) {
-        errors.push("Selected time is not within available appointment slots")
-      }
+    if (!isWithinAvailableSlot) {
+      errors.push("Selected time is not available or conflicts with existing appointments")
     }
 
     return errors
@@ -165,15 +167,13 @@ const AppointmentDialog = ({
     }
 
     setIsCreatingAppointment(true)
-
     try {
       // Mock patient ID - in real app this would come from authentication
-      const mockPatientID = "123456"
-
+      const mockPatientID = user?.sub as string;
       const appointmentRequest: CreateAppointmentRequest = {
         patientId: mockPatientID,
         doctorName: selectedDoctor.name,
-        patientName: "",
+        patientName: user?.name,
         doctorId: selectedDoctor.id,
         type: appointmentType,
         reason: reason.trim(),
@@ -187,7 +187,7 @@ const AppointmentDialog = ({
         `Appointment created successfully!\n` +
           `Status: ${createdAppointment.status}\n` +
           `Type: ${createdAppointment.type}\n` +
-          `Date: ${selectedDate.toLocaleDateString()}\n` +
+          `Date: ${formatDate(selectedDate)}\n` +
           `Time: ${startTime} - ${endTime}\n` +
           `Reason: ${createdAppointment.reason}`,
       )
@@ -203,7 +203,6 @@ const AppointmentDialog = ({
     } catch (error) {
       console.error("Error creating appointment:", error)
 
-      // More detailed error handling
       let errorMessage = "Failed to create appointment. Please try again."
       if (error instanceof Error) {
         if (error.message.includes("not available")) {
@@ -220,16 +219,16 @@ const AppointmentDialog = ({
       if (selectedDoctor && selectedDate) {
         const dateString = selectedDate.toLocaleDateString("en-CA")
         try {
-          const [workSchedules, bookedData] = await Promise.all([
-            ScheduleService.fetchDoctorSchedules(selectedDoctor.id),
-            ScheduleService.getDoctorAvailableSchedule(selectedDoctor.id, dateString),
+          const [workSchedules, availableData] = await Promise.all([
+            ScheduleService.fetchDoctorSchedules("fde7f72c-3156-4a00-95ae-873600eb2798"),
+            ScheduleService.getDoctorAvailableSchedule("fde7f72c-3156-4a00-95ae-873600eb2798", dateString),
           ])
 
           const daySchedule = workSchedules.find((schedule) => schedule.date === dateString)
           if (daySchedule) {
             setDoctorSchedule(daySchedule)
           }
-          setBookedAppointments(bookedData)
+          setAvailableTimeFrames(availableData)
         } catch (refreshError) {
           console.error("Error refreshing schedule:", refreshError)
         }
@@ -309,7 +308,7 @@ const AppointmentDialog = ({
             <SelectContent>
               <SelectItem value="CONSULTATION">Consultation</SelectItem>
               <SelectItem value="CHECKUP">Regular Checkup</SelectItem>
-              <SelectItem value="FOLLOW-UP">Follow-up Visit</SelectItem>
+              <SelectItem value="FOLLOW_UP">Follow-up Visit</SelectItem>
               <SelectItem value="EMERGENCY">Emergency Consultation</SelectItem>
             </SelectContent>
           </Select>

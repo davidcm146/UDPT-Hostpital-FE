@@ -48,6 +48,31 @@ export class MedicineService {
     return json.data as Medicine[]
   }
 
+  static async getMedicationById(id: string): Promise<Medicine> {
+    const res = await fetch(`${this.baseUrl}/medications/${id}`, {
+      headers: {
+        Authorization: `Bearer ${Cookies.get("token")}`,
+        "Content-Type": "application/json",
+      },
+    })
+
+    if (!res.ok) {
+      throw new Error("Failed to fetch medication")
+    }
+
+    const json: Response<Medicine> = await res.json()
+
+    if (json.code !== 200) {
+      throw new Error(json.message || "Unknown error");
+    }
+
+    if (!json.data || Array.isArray(json.data)) {
+      throw new Error("Invalid format");
+    }
+
+    return json.data as Medicine
+  }
+
   static async createMedicine({
     name,
     description,

@@ -90,7 +90,7 @@ export function PrescriptionHistoryCard({
                       <div className="flex items-center">
                         <User className="h-3 w-3 mr-1" />
                         <span>
-                          {calculateAge(patient.DOB)}y, {patient.gender}
+                          {calculateAge(patient.dob)}y, {patient.gender}
                         </span>
                       </div>
                       <div className="flex items-center">
@@ -99,7 +99,7 @@ export function PrescriptionHistoryCard({
                       </div>
                       <div className="flex items-center">
                         <Phone className="h-3 w-3 mr-1" />
-                        <span>{patient.phone}</span>
+                        <span>{patient.phoneNumber}</span>
                       </div>
                     </div>
                   </div>
@@ -124,7 +124,7 @@ export function PrescriptionHistoryCard({
             <div className="space-y-1">
               {prescription.details.slice(0, 2).map((detail, index) => (
                 <div key={index} className="text-sm text-gray-600">
-                  • {detail.medicine.name} - {detail.dosage} {detail.medicine.unit} x{detail.quantity}
+                  • {detail.medicine.name} - {detail.dosage} {detail.medicine.stockQuantity} x{detail.quantity}
                 </div>
               ))}
               {prescription.details.length > 2 && (

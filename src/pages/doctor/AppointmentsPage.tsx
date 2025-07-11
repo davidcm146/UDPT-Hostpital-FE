@@ -8,6 +8,7 @@ import { AppointmentConfirmationHeader } from "@/components/doctor/appointments/
 import { AppointmentService } from "@/services/appointmentService"
 import type { Appointment } from "@/types/appointment"
 import { toast } from "react-toastify"
+import { useAuth } from "@/hooks/AuthContext"
 
 const DoctorAppointmentsPage = () => {
   const [activeTab, setActiveTab] = useState("pending")
@@ -20,9 +21,10 @@ const DoctorAppointmentsPage = () => {
   const [currentPage, setCurrentPage] = useState(0)
   const [totalPages, setTotalPages] = useState(0)
   const [totalElements, setTotalElements] = useState(0)
+  const { user } = useAuth();
 
   // Mock doctor ID - in real app this would come from authentication
-  const currentDoctorID = "fde7f72c-3156-4a00-95ae-873600eb2798"
+  const currentDoctorID = user?.sub
   const itemsPerPage = 4
 
   // Fetch appointments from API

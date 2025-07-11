@@ -4,7 +4,6 @@ export interface Medicine {
   description: string // text
   price: number // decimal - Price per unit
   createdAt?: Date // Datetime
-  // Additional fields for hospital management
   category: string
   dosageForm: string // tablet, capsule, injection, etc.
   stockQuantity: number

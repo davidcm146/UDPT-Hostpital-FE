@@ -48,17 +48,14 @@ export function MedicalRecordCard({
           <Calendar className="h-4 w-4 mr-2" />
           <span>Visit Date: {formatDate(record.visitDate)}</span>
         </div>
-
         <div>
           <p className="text-sm font-medium text-gray-700 mb-1">Treatment:</p>
           <p className="text-sm text-gray-600 line-clamp-2">{record.treatment}</p>
         </div>
-
         <div>
           <p className="text-sm font-medium text-gray-700 mb-1">Description:</p>
           <p className="text-sm text-gray-600 line-clamp-2">{record.description}</p>
         </div>
-
         <div className="flex items-center justify-between pt-2 border-t">
           <div className="flex items-center text-sm text-gray-500">
             <Pill className="h-4 w-4 mr-1" />

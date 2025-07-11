@@ -6,7 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Clock, AlertTriangle, CheckCircle, Calendar, Briefcase } from "lucide-react"
+import { Clock, AlertTriangle, CheckCircle, Calendar, Briefcase, X } from "lucide-react"
 import type { Doctor } from "@/types/doctor"
 import type { DoctorScheduleResponse, AvailableScheduleResponse, TimeFrame } from "@/types/schedule"
 import { formatDuration } from "@/lib/DateTimeUtils"
@@ -19,33 +19,42 @@ interface TimeRangePickerProps {
   onStartTimeChange: (time: string) => void
   onEndTimeChange: (time: string) => void
   doctorSchedule?: DoctorScheduleResponse
-  availableTimeFrames?: AvailableScheduleResponse
+  availableTimeFrames?: AvailableScheduleResponse | null
 }
 
-// Generate time options from available timeframes instead of work shifts
+// Generate time options from available timeframes
 const generateAvailableTimeOptions = (availableTimeFrames: TimeFrame[]) => {
   const times: { value: string; display: string; isAvailable: boolean }[] = []
+
+  // Create a set to avoid duplicates
+  const timeSet = new Set<string>()
 
   availableTimeFrames.forEach((timeFrame) => {
     const frameStart = new Date(timeFrame.startTime)
     const frameEnd = new Date(timeFrame.endTime)
+
+    // Convert to minutes from start of day
     const frameStartMinutes = frameStart.getHours() * 60 + frameStart.getMinutes()
     const frameEndMinutes = frameEnd.getHours() * 60 + frameEnd.getMinutes()
 
     // Generate 15-minute intervals for this available timeframe
-    for (let totalMinutes = frameStartMinutes; totalMinutes < frameEndMinutes; totalMinutes += 15) {
+    for (let totalMinutes = frameStartMinutes; totalMinutes <= frameEndMinutes; totalMinutes += 15) {
       const hour = Math.floor(totalMinutes / 60)
       const minute = totalMinutes % 60
       const timeString = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`
 
-      if (!times.find((t) => t.value === timeString)) {
-        times.push({
-          value: timeString,
-          display: timeString,
-          isAvailable: true, // All times from available timeframes are available
-        })
-      }
+      // Add to set to avoid duplicates
+      timeSet.add(timeString)
     }
+  })
+
+  // Convert set to array and sort
+  Array.from(timeSet).forEach((timeString) => {
+    times.push({
+      value: timeString,
+      display: timeString,
+      isAvailable: true,
+    })
   })
 
   return times.sort((a, b) => a.value.localeCompare(b.value))
@@ -81,6 +90,54 @@ const isTimeAvailable = (time: string, availableTimeFrames: TimeFrame[]): boolea
   })
 }
 
+// Calculate booked timeframes by comparing work shifts with available timeframes
+const calculateBookedTimeFrames = (workShifts: TimeFrame[], availableTimeFrames: TimeFrame[]): TimeFrame[] => {
+  const bookedSlots: TimeFrame[] = []
+
+  workShifts.forEach((shift) => {
+    const shiftStart = timeToMinutes(shift.startTime)
+    const shiftEnd = timeToMinutes(shift.endTime)
+
+    // Find gaps in available timeframes within this work shift
+    let currentTime = shiftStart
+
+    availableTimeFrames.forEach((available) => {
+      const availableStart = timeToMinutes(available.startTime)
+      const availableEnd = timeToMinutes(available.endTime)
+
+      // If there's a gap before this available slot within the work shift
+      if (currentTime < availableStart && availableStart <= shiftEnd) {
+        const gapStartHour = Math.floor(currentTime / 60)
+        const gapStartMinute = currentTime % 60
+        const gapEndHour = Math.floor(availableStart / 60)
+        const gapEndMinute = availableStart % 60
+
+        bookedSlots.push({
+          startTime: `${gapStartHour.toString().padStart(2, "0")}:${gapStartMinute.toString().padStart(2, "0")}`,
+          endTime: `${gapEndHour.toString().padStart(2, "0")}:${gapEndMinute.toString().padStart(2, "0")}`,
+        })
+      }
+
+      currentTime = Math.max(currentTime, availableEnd)
+    })
+
+    // If there's remaining time at the end of the shift
+    if (currentTime < shiftEnd) {
+      const remainingStartHour = Math.floor(currentTime / 60)
+      const remainingStartMinute = currentTime % 60
+      const shiftEndHour = Math.floor(shiftEnd / 60)
+      const shiftEndMinute = shiftEnd % 60
+
+      bookedSlots.push({
+        startTime: `${remainingStartHour.toString().padStart(2, "0")}:${remainingStartMinute.toString().padStart(2, "0")}`,
+        endTime: `${shiftEndHour.toString().padStart(2, "0")}:${shiftEndMinute.toString().padStart(2, "0")}`,
+      })
+    }
+  })
+
+  return bookedSlots
+}
+
 const TimeRangePicker = ({
   selectedDoctor,
   selectedDate,
@@ -94,13 +151,21 @@ const TimeRangePicker = ({
   const [timeOptions, setTimeOptions] = useState<{ value: string; display: string; isAvailable: boolean }[]>([])
   const [conflicts, setConflicts] = useState<string[]>([])
   const [isValidRange, setIsValidRange] = useState(false)
+  const [bookedTimeFrames, setBookedTimeFrames] = useState<TimeFrame[]>([])
 
   useEffect(() => {
     if (availableTimeFrames?.timeFrames && availableTimeFrames.timeFrames.length > 0) {
       const options = generateAvailableTimeOptions(availableTimeFrames.timeFrames)
       setTimeOptions(options)
+
+      // Calculate booked timeframes
+      if (doctorSchedule?.workShifts) {
+        const booked = calculateBookedTimeFrames(doctorSchedule.workShifts, availableTimeFrames.timeFrames)
+        setBookedTimeFrames(booked)
+      }
     } else {
       setTimeOptions([])
+      setBookedTimeFrames([])
     }
   }, [doctorSchedule, availableTimeFrames])
 
@@ -137,77 +202,94 @@ const TimeRangePicker = ({
     // Check if both start and end times are available
     const availableTimeFramesArray = availableTimeFrames?.timeFrames || []
     if (!isTimeAvailable(startTime, availableTimeFramesArray)) {
-      newConflicts.push("Start time is not available (outside work hours or already booked)")
+      newConflicts.push("Start time is not available (already booked or outside work hours)")
     }
 
     if (!isTimeAvailable(endTime, availableTimeFramesArray)) {
-      newConflicts.push("End time is not available (outside work hours or already booked)")
+      newConflicts.push("End time is not available (already booked or outside work hours)")
     }
 
-    // Check if the entire appointment duration doesn't conflict with booked slots
+    // Check if the entire appointment duration is within available timeframes
     if (duration > 0 && availableTimeFrames?.timeFrames) {
       const [startHours, startMinutes] = startTime.split(":").map(Number)
       const [endHours, endMinutes] = endTime.split(":").map(Number)
       const startTotalMinutes = startHours * 60 + startMinutes
       const endTotalMinutes = endHours * 60 + endMinutes
 
-      // No longer checking for conflicts with booked slots, only available timeframes
-      // const hasConflict = bookedAppointments.timeFrames.some((bookedSlot) => {
-      //   const bookedStart = timeToMinutes(bookedSlot.startTime)
-      //   const bookedEnd = timeToMinutes(bookedSlot.endTime)
-      //   // Check for any overlap
-      //   return startTotalMinutes < bookedEnd && endTotalMinutes > bookedStart
-      // })
+      const isEntireRangeAvailable = availableTimeFrames.timeFrames.some((timeFrame) => {
+        const frameStart = timeToMinutes(timeFrame.startTime)
+        const frameEnd = timeToMinutes(timeFrame.endTime)
+        return startTotalMinutes >= frameStart && endTotalMinutes <= frameEnd
+      })
 
-      // if (hasConflict) {
-      //   newConflicts.push("Selected time range conflicts with existing appointments")
-      // }
-    }
-
-    // Check if appointment is within a single work shift
-    if (duration > 0) {
-      const [startHours, startMinutes] = startTime.split(":").map(Number)
-      const [endHours, endMinutes] = endTime.split(":").map(Number)
-      const startTotalMinutes = startHours * 60 + startMinutes
-      const endTotalMinutes = endHours * 60 + endMinutes
-
-      // const isWithinSingleShift = doctorSchedule.workShifts.some((shift) => {
-      //   const shiftStartMinutes = timeToMinutes(shift.startTime)
-      //   const shiftEndMinutes = timeToMinutes(shift.endTime)
-      //   return startTotalMinutes >= shiftStartMinutes && endTotalMinutes <= shiftEndMinutes
-      // })
-
-      // if (!isWithinSingleShift) {
-      //   newConflicts.push("Appointment must be within a single work shift")
-      // }
+      if (!isEntireRangeAvailable) {
+        newConflicts.push("Selected time range spans across unavailable periods")
+      }
     }
 
     setConflicts(newConflicts)
     setIsValidRange(newConflicts.length === 0 && duration > 0)
   }
 
-  const getEndTimeOptions = () => {
-    if (!startTime) return timeOptions.filter((opt) => opt.isAvailable)
+  useEffect(() => {
+    if (startTime) {
+      const endOptions = timeOptions.filter((option) => {
+        if (!option.isAvailable) return false
 
-    const startIndex = timeOptions.findIndex((option) => option.value === startTime)
-    if (startIndex === -1) return timeOptions.filter((opt) => opt.isAvailable)
+        const endMinutes = timeToMinutes(option.value)
 
-    // Return options that are after the start time and available
-    const startMinutes = timeToMinutes(startTime)
-    const validEndTimes = timeOptions.slice(startIndex + 1).filter((option) => {
-      if (!option.isAvailable) return false
+        // End time must be after start time (at least 15 minutes later)
+        if (endMinutes <= timeToMinutes(startTime)) return false
 
-      const endMinutes = timeToMinutes(option.value)
-      // Check if both start and end are within the same work shift
-      return availableTimeFrames?.timeFrames?.some((timeFrame) => {
-        const shiftStartMinutes = timeToMinutes(timeFrame.startTime)
-        const shiftEndMinutes = timeToMinutes(timeFrame.endTime)
-        return startMinutes >= shiftStartMinutes && endMinutes <= shiftEndMinutes
+        // Check if there's a continuous available timeframe from start to end
+        if (!availableTimeFrames?.timeFrames) return false
+
+        // Find if there's an available timeframe that contains both start and end times
+        return availableTimeFrames.timeFrames.some((timeFrame) => {
+          const frameStartMinutes = timeToMinutes(timeFrame.startTime)
+          const frameEndMinutes = timeToMinutes(timeFrame.endTime)
+          return timeToMinutes(startTime) >= frameStartMinutes && endMinutes <= frameEndMinutes
+        })
       })
-    })
+      console.log("Start time:", startTime)
+      console.log("Available end time options:", endOptions.length)
+      console.log(
+        "End options:",
+        endOptions.map((opt) => opt.value),
+      )
+      console.log("Available timeframes:", availableTimeFrames?.timeFrames)
+    }
+  }, [startTime, timeOptions, availableTimeFrames])
 
-    return validEndTimes
-  }
+  // Additional debug effect
+  useEffect(() => {
+    console.log("=== DEBUG INFO ===")
+    console.log("timeOptions:", timeOptions)
+    console.log("availableTimeFrames:", availableTimeFrames)
+    console.log("startTime:", startTime)
+    if (startTime) {
+      const endOptions = timeOptions.filter((option) => {
+        if (!option.isAvailable) return false
+
+        const endMinutes = timeToMinutes(option.value)
+
+        // End time must be after start time (at least 15 minutes later)
+        if (endMinutes <= timeToMinutes(startTime)) return false
+
+        // Check if there's a continuous available timeframe from start to end
+        if (!availableTimeFrames?.timeFrames) return false
+
+        // Find if there's an available timeframe that contains both start and end times
+        return availableTimeFrames.timeFrames.some((timeFrame) => {
+          const frameStartMinutes = timeToMinutes(timeFrame.startTime)
+          const frameEndMinutes = timeToMinutes(timeFrame.endTime)
+          return timeToMinutes(startTime) >= frameStartMinutes && endMinutes <= frameEndMinutes
+        })
+      })
+      console.log("getEndTimeOptions result:", endOptions)
+    }
+    console.log("==================")
+  }, [startTime, timeOptions, availableTimeFrames])
 
   const getStatusIcon = () => {
     if (!selectedDoctor || !selectedDate) return <Clock className="w-4 h-4 text-gray-400" />
@@ -236,6 +318,26 @@ const TimeRangePicker = ({
           <p className="text-gray-600">
             {selectedDoctor.name} is not scheduled to work on {selectedDate.toLocaleDateString()}. Please select a
             different date.
+          </p>
+        </CardContent>
+      </Card>
+    )
+  }
+
+  // Show no available slots message
+  if (
+    selectedDoctor &&
+    selectedDate &&
+    doctorSchedule?.workShifts?.length &&
+    (!availableTimeFrames?.timeFrames || availableTimeFrames.timeFrames.length === 0)
+  ) {
+    return (
+      <Card>
+        <CardContent className="p-6 text-center">
+          <X className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No Available Slots</h3>
+          <p className="text-gray-600">
+            All appointment slots are booked for {selectedDate.toLocaleDateString()}. Please select a different date.
           </p>
         </CardContent>
       </Card>
@@ -274,28 +376,21 @@ const TimeRangePicker = ({
               )}
 
               {/* Booked Slots */}
-              {/* {bookedAppointments?.timeFrames && bookedAppointments.timeFrames.length > 0 && (
+              {bookedTimeFrames && bookedTimeFrames.length > 0 && (
                 <div>
                   <div className="flex items-center gap-2 text-sm mb-2">
                     <X className="w-4 h-4 text-red-600" />
                     <span className="font-medium text-red-700">Already Booked:</span>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {bookedAppointments.timeFrames.map((slot, index) => {
-                      const startDate = new Date(slot.startTime)
-                      const endDate = new Date(slot.endTime)
-                      const startTimeStr = `${startDate.getHours().toString().padStart(2, "0")}:${startDate.getMinutes().toString().padStart(2, "0")}`
-                      const endTimeStr = `${endDate.getHours().toString().padStart(2, "0")}:${endDate.getMinutes().toString().padStart(2, "0")}`
-
-                      return (
-                        <Badge key={index} variant="outline" className="text-xs border-red-200 text-red-700 bg-red-50">
-                          {startTimeStr} - {endTimeStr}
-                        </Badge>
-                      )
-                    })}
+                    {bookedTimeFrames.map((slot, index) => (
+                      <Badge key={index} variant="outline" className="text-xs border-red-200 text-red-700 bg-red-50">
+                        {slot.startTime} - {slot.endTime}
+                      </Badge>
+                    ))}
                   </div>
                 </div>
-              )} */}
+              )}
 
               {/* Available Time Slots */}
               {availableTimeFrames?.timeFrames && availableTimeFrames.timeFrames.length > 0 && (
@@ -323,18 +418,7 @@ const TimeRangePicker = ({
                     })}
                   </div>
                 </div>
-              )}
-
-              {/* Available Time Summary */}
-              <div>
-                <div className="flex items-center gap-2 text-sm mb-2">
-                  <CheckCircle className="w-4 h-4 text-green-600" />
-                  <span className="font-medium text-green-700">Available for Booking:</span>
-                </div>
-                <p className="text-xs text-gray-600">
-                  {timeOptions.filter((opt) => opt.isAvailable).length} time slots available (15-minute intervals)
-                </p>
-              </div>
+              )}        
             </div>
           </CardContent>
         </Card>
@@ -344,13 +428,38 @@ const TimeRangePicker = ({
         {/* Start Time */}
         <div>
           <Label className="text-sm font-medium mb-2 block">Start Time *</Label>
-          <Select value={startTime} onValueChange={onStartTimeChange} disabled={!doctorSchedule?.workShifts?.length}>
+          <Select
+            value={startTime}
+            onValueChange={onStartTimeChange}
+            disabled={!doctorSchedule?.workShifts?.length || timeOptions.length === 0}
+          >
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Select start time" />
             </SelectTrigger>
             <SelectContent className="max-h-60">
               {timeOptions
-                .filter((option) => option.isAvailable)
+                .filter((option) => {
+                  if (!option.isAvailable) return false
+
+                  const optionMinutes = timeToMinutes(option.value)
+
+                  // Don't suggest times that are exactly at the end of booked timeframes
+                  const isEndOfBookedSlot = bookedTimeFrames.some((bookedSlot) => {
+                    const bookedEndMinutes = timeToMinutes(bookedSlot.endTime)
+                    return optionMinutes === bookedEndMinutes
+                  })
+
+                  if (isEndOfBookedSlot) return false
+
+                  // Don't suggest times that fall within booked timeframes
+                  const isWithinBookedSlot = bookedTimeFrames.some((bookedSlot) => {
+                    const bookedStartMinutes = timeToMinutes(bookedSlot.startTime)
+                    const bookedEndMinutes = timeToMinutes(bookedSlot.endTime)
+                    return optionMinutes > bookedStartMinutes && optionMinutes < bookedEndMinutes
+                  })
+
+                  return !isWithinBookedSlot
+                })
                 .map((option) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.display}
@@ -372,7 +481,42 @@ const TimeRangePicker = ({
               <SelectValue placeholder="Select end time" />
             </SelectTrigger>
             <SelectContent className="max-h-60">
-              {getEndTimeOptions().map((option) => (
+              {(() => {
+                if (!startTime) return []
+
+                const startMinutes = timeToMinutes(startTime)
+
+                // Check if start time is within any booked timeframe
+                const isStartTimeInBookedSlot = bookedTimeFrames.some((bookedSlot) => {
+                  const bookedStartMinutes = timeToMinutes(bookedSlot.startTime)
+                  const bookedEndMinutes = timeToMinutes(bookedSlot.endTime)
+                  return startMinutes >= bookedStartMinutes && startMinutes < bookedEndMinutes
+                })
+
+                // If start time is in a booked slot, don't show any end time options
+                if (isStartTimeInBookedSlot) {
+                  return []
+                }
+
+                return timeOptions.filter((option) => {
+                  if (!option.isAvailable) return false
+
+                  const endMinutes = timeToMinutes(option.value)
+
+                  // End time must be after start time (at least 15 minutes later)
+                  if (endMinutes <= startMinutes) return false
+
+                  // Check if there's a continuous available timeframe from start to end
+                  if (!availableTimeFrames?.timeFrames) return false
+
+                  // Find if there's an available timeframe that contains both start and end times
+                  return availableTimeFrames.timeFrames.some((timeFrame) => {
+                    const frameStartMinutes = timeToMinutes(timeFrame.startTime)
+                    const frameEndMinutes = timeToMinutes(timeFrame.endTime)
+                    return startMinutes >= frameStartMinutes && endMinutes <= frameEndMinutes
+                  })
+                })
+              })().map((option) => (
                 <SelectItem key={option.value} value={option.value}>
                   {option.display}
                 </SelectItem>
@@ -381,6 +525,28 @@ const TimeRangePicker = ({
           </Select>
         </div>
       </div>
+
+      {startTime &&
+        (() => {
+          const startMinutes = timeToMinutes(startTime)
+          const isStartTimeInBookedSlot = bookedTimeFrames.some((bookedSlot) => {
+            const bookedStartMinutes = timeToMinutes(bookedSlot.startTime)
+            const bookedEndMinutes = timeToMinutes(bookedSlot.endTime)
+            return startMinutes >= bookedStartMinutes && startMinutes < bookedEndMinutes
+          })
+
+          if (isStartTimeInBookedSlot) {
+            return (
+              <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded-md">
+                <div className="flex items-center gap-2 text-sm text-red-600">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>Selected start time falls within a booked slot. Please choose a different start time.</span>
+                </div>
+              </div>
+            )
+          }
+          return null
+        })()}
 
       {/* Duration and Status Display */}
       {startTime && endTime && doctorSchedule?.workShifts?.length && (
@@ -478,33 +644,47 @@ const TimeRangePicker = ({
                   const dayEndMinutes = 18 * 60 // 6:00 PM
                   const dayDuration = dayEndMinutes - dayStartMinutes
 
+                  // Ensure the shift times are within the display range
+                  const clampedStartMinutes = Math.max(startMinutes, dayStartMinutes)
+                  const clampedEndMinutes = Math.min(endMinutes, dayEndMinutes)
+
+                  const leftPercentage = ((clampedStartMinutes - dayStartMinutes) / dayDuration) * 100
+                  const widthPercentage = ((clampedEndMinutes - clampedStartMinutes) / dayDuration) * 100
+
                   return (
                     <div
                       key={`work-${index}`}
                       className="absolute h-full bg-blue-100 rounded"
                       style={{
-                        left: `${Math.max(0, ((startMinutes - dayStartMinutes) / dayDuration) * 100)}%`,
-                        width: `${Math.min(100, ((endMinutes - startMinutes) / dayDuration) * 100)}%`,
+                        left: `${Math.max(0, leftPercentage)}%`,
+                        width: `${Math.max(0, widthPercentage)}%`,
                       }}
                     />
                   )
                 })}
 
                 {/* Booked time slots */}
-                {availableTimeFrames?.timeFrames?.map((slot, index) => {
+                {bookedTimeFrames?.map((slot, index) => {
                   const startMinutes = timeToMinutes(slot.startTime)
                   const endMinutes = timeToMinutes(slot.endTime)
                   const dayStartMinutes = 8 * 60 // 8:00 AM
                   const dayEndMinutes = 18 * 60 // 6:00 PM
                   const dayDuration = dayEndMinutes - dayStartMinutes
 
+                  // Ensure the slot times are within the display range
+                  const clampedStartMinutes = Math.max(startMinutes, dayStartMinutes)
+                  const clampedEndMinutes = Math.min(endMinutes, dayEndMinutes)
+
+                  const leftPercentage = ((clampedStartMinutes - dayStartMinutes) / dayDuration) * 100
+                  const widthPercentage = ((clampedEndMinutes - clampedStartMinutes) / dayDuration) * 100
+
                   return (
                     <div
                       key={`booked-${index}`}
                       className="absolute h-full bg-red-400 rounded"
                       style={{
-                        left: `${Math.max(0, ((startMinutes - dayStartMinutes) / dayDuration) * 100)}%`,
-                        width: `${Math.min(100, ((endMinutes - startMinutes) / dayDuration) * 100)}%`,
+                        left: `${Math.max(0, leftPercentage)}%`,
+                        width: `${Math.max(0, widthPercentage)}%`,
                       }}
                     />
                   )
@@ -516,7 +696,7 @@ const TimeRangePicker = ({
                     className={`absolute h-full rounded ${isValidRange ? "bg-teal-500" : "bg-red-500"}`}
                     style={{
                       left: `${Math.max(0, ((timeToMinutes(startTime) - 8 * 60) / (10 * 60)) * 100)}%`,
-                      width: `${Math.min(100, (duration / (10 * 60)) * 100)}%`,
+                      width: `${Math.min(100, Math.max(0, (duration / (10 * 60)) * 100))}%`,
                     }}
                   />
                 )}

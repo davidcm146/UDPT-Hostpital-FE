@@ -33,7 +33,7 @@ const AppointmentsPage = () => {
 
     try {
       const res = await AppointmentService.getAppointments({
-        patientId: "6f26eb2d-788b-4265-910a-4227c3b6f693",
+        patientId: user?.sub,
         type: selectedType !== "ALL" ? selectedType : undefined,
         status: activeTab !== "ALL" ? activeTab : undefined,
         page: currentPage,

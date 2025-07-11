@@ -4,36 +4,30 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Calendar, User, Stethoscope, FileText, Pill, Clock, Phone, Heart, AlertTriangle } from "lucide-react"
+import { Calendar, User, Stethoscope, FileText, Clock, Phone, AlertTriangle } from "lucide-react"
 import type { MedicalRecord } from "@/types/medical-record"
-import { formatDate } from "@/lib/MedicalRecordUtils"
-import { calculateAge } from "@/lib/PatientUtils"
-import { Patient } from "@/types/patient"
+import { formatDate } from "@/lib/DateTimeUtils"
 
 interface MedicalRecordHistoryCardProps {
   record: MedicalRecord
-  patient?: Patient
   onViewDetails?: (recordID: string) => void
   onViewPatient?: (patientID: string) => void
-  onAddPrescription?: (recordID: string) => void
 }
 
 export function MedicalRecordHistoryCard({
   record,
-  patient,
   onViewDetails,
   onViewPatient,
-  onAddPrescription,
 }: MedicalRecordHistoryCardProps) {
   const getVisitTypeColor = (visitType: string) => {
     switch (visitType.toLowerCase()) {
-      case "emergency":
+      case "EMERGENCY":
         return "bg-red-100 text-red-800"
-      case "follow-up":
+      case "FOLLOW_UP":
         return "bg-blue-100 text-blue-800"
-      case "consultation":
+      case "CONSULTATION":
         return "bg-purple-100 text-purple-800"
-      case "regular checkup":
+      case "CHECKUP":
         return "bg-green-100 text-green-800"
       default:
         return "bg-gray-100 text-gray-800"
@@ -42,13 +36,13 @@ export function MedicalRecordHistoryCard({
 
   const getVisitTypeIcon = (visitType: string) => {
     switch (visitType.toLowerCase()) {
-      case "emergency":
+      case "EMERGENCY":
         return AlertTriangle
-      case "follow-up":
+      case "FOLLOW_UP":
         return Clock
-      case "consultation":
+      case "CONSULTATION":
         return User
-      case "regular checkup":
+      case "CHECKUP":
         return Stethoscope
       default:
         return Stethoscope
@@ -63,10 +57,6 @@ export function MedicalRecordHistoryCard({
 
   const handleViewPatient = () => {
     onViewPatient?.(record.patientId)
-  }
-
-  const handleAddPrescription = () => {
-    onAddPrescription?.(record.id)
   }
 
   return (
@@ -88,62 +78,48 @@ export function MedicalRecordHistoryCard({
                 <p className="text-sm text-gray-600 line-clamp-2 mb-2">{record.treatment}</p>
                 <div className="flex items-center text-sm text-gray-500">
                   <Calendar className="h-4 w-4 mr-1" />
-                  <span>{formatDate(record.visitDate)}</span>
+                  <span>{formatDate(record.visitDate.toString())}</span>
                   <span className="mx-2">•</span>
                   <Clock className="h-4 w-4 mr-1" />
-                  <span>Created {formatDate(record.createdAt)}</span>
+                  <span>Created {formatDate(record.createdAt?.toString() || "")}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Patient Information */}
-          {patient && (
-            <div className="bg-gray-50 rounded-lg p-3 mb-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src="/placeholder.svg" alt={patient.name} />
-                    <AvatarFallback>
-                      {patient.name
-                        .split(" ")
-                        .map((n) => n[0])
-                        .join("")}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-medium text-sm">{patient.name}</p>
-                    <div className="flex items-center text-xs text-gray-500 space-x-3">
-                      <div className="flex items-center">
-                        <User className="h-3 w-3 mr-1" />
-                        <span>
-                          {calculateAge(patient.DOB)}y, {patient.gender}
-                        </span>
-                      </div>
-                      <div className="flex items-center">
-                        <Heart className="h-3 w-3 mr-1 text-red-500" />
-                        <span>{patient.bloodType}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <Phone className="h-3 w-3 mr-1" />
-                        <span>{patient.phone}</span>
-                      </div>
+          {/* Patient Information - Now using data from MedicalRecord */}
+          <div className="bg-gray-50 rounded-lg p-3 mb-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src="/placeholder.svg" alt={record.patientName} />
+                  <AvatarFallback>
+                    {record.patientName
+                      ?.split(" ")
+                      .map((n) => n[0])
+                      .join("")}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-medium text-sm">{record.patientName}</p>
+                  <div className="flex items-center text-xs text-gray-500 space-x-3">
+                    <div className="flex items-center">
+                      <User className="h-3 w-3 mr-1" />
+                      <span>ID: {record.patientId.slice(-8)}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Phone className="h-3 w-3 mr-1" />
+                      <span>{record.patientPhoneNumber}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <Stethoscope className="h-3 w-3 mr-1" />
+                      <span>Dr. {record.doctorName}</span>
                     </div>
                   </div>
                 </div>
               </div>
-
-              {patient.allergies && patient.allergies !== "No known allergies" && (
-                <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
-                  <div className="flex items-center">
-                    <AlertTriangle className="h-3 w-3 text-yellow-600 mr-1" />
-                    <span className="text-xs font-medium text-yellow-800">Allergies: </span>
-                    <span className="text-xs text-yellow-700">&nbsp;{patient.allergies}</span>
-                  </div>
-                </div>
-              )}
             </div>
-          )}
+          </div>
 
           {/* Record Details Preview */}
           {record.description && (

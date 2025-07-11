@@ -1,9 +1,8 @@
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { User, Calendar, ClipboardList, Pill, AlertTriangle, Phone, Mail, Heart } from "lucide-react"
+import { User, ClipboardList, AlertTriangle, Phone, Mail, Heart } from "lucide-react"
 import type { Patient } from "@/types/patient"
-import { getPrescriptionsByPatient } from "@/data/prescription"
 import { calculateAge, formatWeight } from "@/lib/PatientUtils"
 
 interface PatientCardProps {

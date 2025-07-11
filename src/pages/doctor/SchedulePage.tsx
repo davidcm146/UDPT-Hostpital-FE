@@ -4,13 +4,15 @@ import { Clock, Calendar, CalendarDays } from "lucide-react"
 import { ScheduleHeader } from "@/components/doctor/schedule/ScheduleHeader"
 import { DoctorScheduleCalendar } from "@/components/doctor/schedule/ScheduleCalendar"
 import { DoctorScheduleList } from "@/components/doctor/schedule/ScheduleList"
+import { useAuth } from "@/hooks/AuthContext"
 
 const DoctorSchedulePage = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(new Date())
-  const [activeTab, setActiveTab] = useState("today")
+  const [activeTab, setActiveTab] = useState("today");
+  const { user } = useAuth();
 
   // In a real app, this would come from authentication context
-  const currentDoctorID = "fde7f72c-3156-4a00-95ae-873600eb2798"
+  const currentDoctorID = user?.sub;
 
   return (
     <div className="min-h-screen bg-gray-50">

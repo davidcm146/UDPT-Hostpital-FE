@@ -9,14 +9,16 @@ import { User, RefreshCw, AlertCircle } from "lucide-react"
 import { Loading } from "@/components/ui/loading"
 import { ReceptionistService } from "@/services/receptionistService"
 import type { Receptionist } from "@/types/receptionist"
+import { useAuth } from "@/hooks/AuthContext"
 
 export default function ReceptionistProfilePage() {
   const [receptionist, setReceptionist] = useState<Receptionist | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { user } = useAuth();
 
-  const receptionistId = "bd444d62-84f4-4fb3-a059-9a3128ad5407"
+  const receptionistId = user?.sub as string
 
   const fetchReceptionistData = async () => {
     setIsLoading(true)

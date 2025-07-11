@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Clock, User, MapPin, ClipboardList, AlertCircle } from "lucide-react"
 import type { Appointment } from "@/types/appointment"
-import { formatDate, formatTimeFromHHMM, formatTimeFromISO } from "@/lib/DateTimeUtils"
+import { formatDate, formatTimeFromISO } from "@/lib/DateTimeUtils"
 import { calculateDuration } from "@/lib/AppointmentUtils"
 
 interface DoctorAppointmentCardProps {

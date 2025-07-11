@@ -7,7 +7,8 @@ import { DoctorAppointmentCard } from "./AppointmentCard"
 import { AppointmentService } from "@/services/appointmentService"
 import { ScheduleService } from "@/services/scheduleService"
 import type { Appointment } from "@/types/appointment"
-import type { ScheduleResponse, TimeFrame } from "@/types/schedule"
+import type { DoctorScheduleResponse, ScheduleResponse, TimeFrame } from "@/types/schedule"
+import { formatTimeFromISO } from "@/lib/DateTimeUtils"
 
 interface DoctorScheduleCalendarProps {
   selectedDate: Date | undefined
@@ -21,7 +22,7 @@ export function DoctorScheduleCalendar({
   doctorID,
 }: DoctorScheduleCalendarProps) {
   const [appointments, setAppointments] = useState<Appointment[]>([])
-  const [schedule, setSchedule] = useState<ScheduleResponse | null>(null)
+  const [schedule, setSchedule] = useState<DoctorScheduleResponse | null>(null)
   const [isLoadingAppointments, setIsLoadingAppointments] = useState(false)
   const [isLoadingSchedule, setIsLoadingSchedule] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -32,7 +33,7 @@ export function DoctorScheduleCalendar({
       if (!selectedDate || !doctorID) return
 
       setError(null)
-      const dateString = selectedDate.toLocaleDateString("en-CA");
+      const dateString = selectedDate.toLocaleDateString("en-CA") // yyyy-MM-dd
 
       // Fetch appointments
       setIsLoadingAppointments(true)
@@ -43,7 +44,6 @@ export function DoctorScheduleCalendar({
           size: 4,
         })
 
-        // Filter appointments for the selected date
         const filteredAppointments = response.data.filter((appointment) => {
           const appointmentDate = appointment.startTime.split(" ")[0]
           return appointmentDate === dateString
@@ -58,14 +58,28 @@ export function DoctorScheduleCalendar({
         setIsLoadingAppointments(false)
       }
 
-      // Fetch doctor schedule (available time slots)
+      // Fetch all doctor schedules and filter by selected date
       setIsLoadingSchedule(true)
       try {
-        const scheduleData = await ScheduleService.getDoctorSchedule(doctorID, dateString)
-        setSchedule(scheduleData)
+        const schedules = await ScheduleService.fetchDoctorSchedules(doctorID)
+        const matched = schedules.find((s) => s.date === dateString)
+
+        if (matched) {
+          // Adapt it to ScheduleResponse type if needed
+          setSchedule({
+            doctorId: matched.doctorId,
+            date: matched.date,
+            workShifts: matched.workShifts, // Rename for compatibility
+          })
+        } else {
+          setSchedule({
+            doctorId: doctorID,
+            date: dateString,
+            workShifts: [],
+          })
+        }
       } catch (err) {
         console.error("Error fetching schedule:", err)
-        // Don't set error for schedule as it's optional
         setSchedule(null)
       } finally {
         setIsLoadingSchedule(false)
@@ -74,6 +88,7 @@ export function DoctorScheduleCalendar({
 
     fetchData()
   }, [selectedDate, doctorID])
+
 
   const handleViewDetails = (appointmentID: string) => {
     console.log("View details for appointment:", appointmentID)
@@ -86,15 +101,6 @@ export function DoctorScheduleCalendar({
   const handleReschedule = (appointmentID: string) => {
     console.log("Reschedule appointment:", appointmentID)
   }
-
-  const formatTimeFrame = (timeFrame: TimeFrame) => {
-    const start = new Date(timeFrame.startTime)
-    const end = new Date(timeFrame.endTime)
-    const startTime = `${start.getHours().toString().padStart(2, "0")}:${start.getMinutes().toString().padStart(2, "0")}`
-    const endTime = `${end.getHours().toString().padStart(2, "0")}:${end.getMinutes().toString().padStart(2, "0")}`
-    return `${startTime} - ${endTime}`
-  }
-
   const isLoading = isLoadingAppointments || isLoadingSchedule
 
   return (
@@ -143,7 +149,7 @@ export function DoctorScheduleCalendar({
         {!isLoading && !error && selectedDate && (
           <>
             {/* Available Time Slots */}
-            {schedule && schedule.timeFrames.length > 0 && (
+            {schedule && schedule.workShifts.length > 0 && (
               <Card>
                 <CardHeader>
                   <CardTitle className="flex items-center text-lg">
@@ -153,13 +159,13 @@ export function DoctorScheduleCalendar({
                 </CardHeader>
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
-                    {schedule.timeFrames.map((timeFrame, index) => (
+                    {schedule.workShifts.map((workShift, index) => (
                       <Badge
                         key={index}
                         variant="outline"
                         className="text-sm py-1 px-3 bg-green-50 text-green-700 border-green-200"
                       >
-                        {formatTimeFrame(timeFrame)}
+                        {formatTimeFromISO(workShift.startTime)} - {formatTimeFromISO(workShift.endTime)}
                       </Badge>
                     ))}
                   </div>
@@ -190,7 +196,7 @@ export function DoctorScheduleCalendar({
               </Card>
             )}
 
-            {schedule && schedule.timeFrames.length === 0 && appointments.length === 0 && (
+            {schedule && schedule.workShifts.length === 0 && appointments.length === 0 && (
               <Card>
                 <CardContent className="p-6 text-center">
                   <CalendarIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
@@ -200,7 +206,7 @@ export function DoctorScheduleCalendar({
               </Card>
             )}
 
-            {schedule && schedule.timeFrames.length > 0 && appointments.length === 0 && (
+            {schedule && schedule.workShifts.length > 0 && appointments.length === 0 && (
               <Card>
                 <CardContent className="p-6 text-center">
                   <Clock className="h-12 w-12 text-green-400 mx-auto mb-4" />
